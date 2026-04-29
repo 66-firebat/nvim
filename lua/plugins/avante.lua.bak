@@ -1,0 +1,64 @@
+return {
+  "yetone/avante.nvim",
+  event = "VeryLazy",
+  lazy = false,
+  version = false, -- Set this to false to always pull the latest changes
+opts = {
+  provider = "gemini",
+  providers = {
+    -- gemini = {
+    --   model = "gemini-3-flash-preview",
+    --   extra_request_body = {
+    --     temperature = 0,
+    --     max_tokens = 16384,
+    --     thinking_level = "high",
+    --   },
+    -- },
+    groq = {
+            __inherited_from = "openai",
+            api_key_name = "GROQ_API_KEY",
+            endpoint = "https://api.groq.com/openai/v1",
+            model = "llama-3.3-70b-versatile", -- Fast and very capable
+            timeout = 30000, -- 30 seconds
+            temperature = 0,
+            max_tokens = 4096,
+          },
+  },
+  behaviour = {
+    enable_fastapply = false, -- Set to false to force the diff review stage
+  }
+},
+-- If you are on Windows/Linux/MacOS, this builds the necessary dynamic libraries
+  build = "make", 
+  dependencies = {
+    "nvim-treesitter/nvim-treesitter",
+    "stevearc/dressing.nvim",
+    "nvim-lua/plenary.nvim",
+    "MunifTanjim/nui.nvim",
+    --- The below dependencies are optional
+    "nvim-tree/nvim-web-devicons", 
+    "zbirenbaum/copilot.lua", -- only if you want copilot as well
+    {
+      -- support for image pasting
+      "HakonHarnes/img-clip.nvim",
+      event = "VeryLazy",
+      opts = {
+        default = {
+          embed_image_as_base64 = false,
+          prompt_for_file_name = false,
+          drag_and_drop = {
+            insert_mode = true,
+          },
+        },
+      },
+    },
+    {
+      -- Make sure to set this up properly if you have lazy.nvim
+      'MeanderingProgrammer/render-markdown.nvim',
+      opts = {
+        file_types = { "markdown", "Avante" },
+      },
+      ft = { "markdown", "Avante" },
+    },
+  },
+}

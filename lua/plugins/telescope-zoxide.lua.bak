@@ -1,0 +1,21 @@
+return {
+  "jvgrootveld/telescope-zoxide",
+  dependencies = {
+    "nvim-telescope/telescope.nvim",
+  },
+  config = function()
+    require("telescope").load_extension("zoxide")
+
+    require("telescope._extensions.zoxide.config").setup({
+      mappings = {
+        default = {
+          action = function(selection)
+            require("oil").open(selection.filename)
+          end,
+        },
+      },
+    })
+
+    vim.keymap.set("n", "<leader>fz", require("telescope").extensions.zoxide.list)
+  end,
+}

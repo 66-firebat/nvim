@@ -16,6 +16,11 @@ MdMath has to be rebuilt after installing the necessary dependnecies (imagemagic
 	- Shows commands installed in Snacks picker
   `:lua Snacks.picker.commands()`
 
+- nvim-treesitter
+	- Nvim treesitters refactor to main requires a new lazy configuration.
+	- https://github.com/nvim-lua/kickstart.nvim/pull/1748#issuecomment-3740311930
+  - https://www.reddit.com/r/neovim/comments/1q2rnnl/i_just_installed_kickstart_and_getting_this_error/
+
 - Add 'nowait' so it fires immediately even if other maps exist
 `local <code>opts</code> = { noremap = true, silent = true, nowait = true }`
 

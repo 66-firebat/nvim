@@ -6,7 +6,34 @@ return {
   opts = {
     bigfile = { enabled = true },
     dashboard = { enabled = true},
-    explorer = { enabled = true },
+    explorer = {
+      layout = {
+        preview = "main",
+        layout = {
+          backdrop = false,
+          width = 40,
+          min_width = 40,
+          height = 0.3,
+          position = "left",
+          border = "none",
+          box = "vertical",
+          {
+            win = "input",
+            height = 1,
+            border = true,
+            title = "{title} {live} {flags}",
+            title_pos = "center",
+          },
+          { win = "list", border = "none" },
+          { win = "preview", title = "{preview}", height = 0.4, border = "top" },
+        },
+      },
+      prompt = " THIS : ",
+      enabled = true,
+      sources = {
+        files = { hidden = true },
+      },
+    },
     indent = { enabled = false },
     input = { enabled = true },
     notifier = {

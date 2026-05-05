@@ -188,7 +188,7 @@ return {
         lualine_b = {'branch'},
         lualine_c = {'filename'},
         lualine_x = {},
-        lualine_y = {},
+        lualine_y = {'buffers'},
         lualine_z = {'tabs'}
       },
       extensions = { 'oil' },

@@ -16,16 +16,13 @@ local function get_file_size()
 end
 
 local function get_nvim_stats()
-    local uv = vim.uv or vim.loop -- Compatibility for older and newer Neovim versions
-    
+    local uv = vim.uv or vim.loop
     local pid = uv.os_getpid()
-    local rss_bytes = uv.get_total_rss()
-    local rss_mb = rss_bytes / 1024 / 1024
+    -- This version is usually the most compatible across Neovim versions
+    local rss = uv.resident_set_memory() / 1024 / 1024
     
-    -- Return the formatted string instead of printing it
-    return string.format("PID: %d | Mem: %.2f MB", pid, rss_mb)
+    return string.format("PID: %d | %.1fMB", pid, rss)
 end
-
 -- A Lua function to fetch the number of buffers currently open in the nvim instance.
 local function get_buffer_count()
   local buffers = #vim.fn.getbufinfo({ buflisted = 1 })

@@ -57,6 +57,7 @@ local function get_git_branch()
   -- The output from vim.fn.system() includes a trailing newline,
   -- so we use string.gsub to trim leading/trailing whitespace.
   branch_name = branch_name:gsub('^%s*(.-)%s*$', '%1')
+  branch_hash = branch_hash:gsub('^%s*(.-)%s*$', '%1')
 
   -- Check if the command failed or if the output is empty (e.g., not a git repo)
   if branch_name == '' or branch_name:find('fatal:') then

@@ -19,7 +19,7 @@ local function get_nvim_stats()
     local uv = vim.uv or vim.loop -- Compatibility for older and newer Neovim versions
     
     local pid = uv.os_getpid()
-    local rss_bytes = uv.get_process_rss()
+    local rss_bytes = uv.get_total_rss()
     local rss_mb = rss_bytes / 1024 / 1024
     
     -- Return the formatted string instead of printing it

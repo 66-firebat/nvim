@@ -355,13 +355,30 @@ vim.api.nvim_create_autocmd("BufLeave", {
 
 
 
--- Disables sign column in terminal windows to prevent column colors from showing 
+--[[ -- Disables sign column in terminal windows to prevent column colors from showing 
 vim.api.nvim_create_autocmd("TermOpen", {
   pattern = "*",
   callback = function()
     -- Turn off line numbers and relative numbers essentially removing the sign column
     vim.cmd("let &statuscolumn=''")
 
+  end,
+}) ]]
+
+-- Enables all signcolumn features in terminal
+vim.api.nvim_create_autocmd("TermOpen", {
+  group = vim.api.nvim_create_augroup("terminal-style-sync", { clear = true }),
+  callback = function()
+    -- Enable numbers so the statuscol has a "canvas" to draw on
+    vim.opt_local.number = true
+    vim.opt_local.relativenumber = true
+    
+    -- Ensure the signcolumn doesn't collapse
+    vim.opt_local.signcolumn = "yes"
+    
+    -- Force the statuscolumn to be inherited/set
+    -- (Usually inherited globally, but TermOpen sometimes clears it)
+    vim.opt_local.statuscolumn = vim.opt.statuscolumn:get()
   end,
 })
 

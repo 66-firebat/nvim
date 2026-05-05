@@ -271,14 +271,22 @@ vim.api.nvim_create_autocmd("TermOpen", {
 })
 
 -- Automatically close terminal buffers when the job exits, which prevents you from having to manually close them by pressing any key
+-- vim.api.nvim_create_autocmd("BufLeave", {
+--   callback = function()
+--     if vim.bo.buftype == "terminal" and vim.fn.bufname():match("broot") then
+--       vim.cmd("bd!") -- close the buffer
+--     end
+--   end,
+-- })
+
+-- Automatically close terminal buffers when the job exits (CTRL+ D)
 vim.api.nvim_create_autocmd("BufLeave", {
   callback = function()
-    if vim.bo.buftype == "terminal" and vim.fn.bufname():match("broot") then
+    if vim.bo.buftype == "terminal"
       vim.cmd("bd!") -- close the buffer
     end
   end,
 })
-
 
 -- vim.api.nvim_create_autocmd("BufReadPre", {
 --   -- Target all .tex files in any directory

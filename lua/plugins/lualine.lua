@@ -65,7 +65,7 @@ local function get_git_branch()
   end
 
   -- Prefix the branch name with a recognizable icon/symbol
-  return branch_name .. ' ' .. branch_hash
+  return branch_name .. ' : ' .. branch_hash
 end
 
 -- --- EXAMPLE USAGE ---
@@ -78,7 +78,7 @@ end
 -- }
 
 -- For demonstration, let's print the result:
-print(string.format("Current Branch: %s", get_git_branch()))
+-- print(string.format("Current Branch: %s", get_git_branch()))
 
 return {
     'nvim-lualine/lualine.nvim',

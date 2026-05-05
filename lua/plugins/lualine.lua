@@ -47,10 +47,12 @@ local function get_git_branch()
   -- The command to get the current branch name, abbreviated.
   -- This command is run by git in the directory of the current file.
   local git_command = 'git rev-parse --abbrev-ref HEAD'
+  local branch_hash_function = 'git rev-parse --short HEAD'
 
   -- Use vim.fn.system() to execute the command.
   -- This returns the command output, including a trailing newline.
   local branch_name = vim.fn.system(git_command)
+  local branch_hash = vim.fn.system(branch_hash_function)
 
   -- The output from vim.fn.system() includes a trailing newline,
   -- so we use string.gsub to trim leading/trailing whitespace.
@@ -63,7 +65,7 @@ local function get_git_branch()
   end
 
   -- Prefix the branch name with a recognizable icon/symbol
-  return ' ' .. branch_name
+  return branch_name .. ' ' .. branch_hash
 end
 
 -- --- EXAMPLE USAGE ---

@@ -383,3 +383,6 @@ vim.keymap.set("n", "<M-f>", function()
     end,
   })
 end)
+
+-- Exits out of terminal mode into terminal normal mode
+vim.keymap.set('t', 'jk', [[<C-\><C-n>]], { desc = "Exit terminal mode" })

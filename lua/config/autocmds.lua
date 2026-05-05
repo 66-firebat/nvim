@@ -282,7 +282,7 @@ vim.api.nvim_create_autocmd("TermOpen", {
 -- Automatically close terminal buffers when the job exits (CTRL+ D)
 vim.api.nvim_create_autocmd("BufLeave", {
   callback = function()
-    if vim.bo.buftype == "terminal"
+    if vim.bo.buftype == "terminal" then
       vim.cmd("bd!") -- close the buffer
     end
   end,

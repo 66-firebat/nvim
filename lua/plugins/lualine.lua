@@ -231,8 +231,10 @@ return {
         lualine_x = {},
         lualine_y = {},
         lualine_z = {
-          'filetype',
-          icon_only = true,
+          {
+            'filetype',
+            icon_only = true,
+          }
         }
       },
       extensions = { 'oil' },

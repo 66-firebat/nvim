@@ -144,7 +144,7 @@ return {
         normal = {
           a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
           b = { fg = '#2b2b2b', bg = '#ff4400' },
-          c = { fg = '#ff4400', bg = '#2b2b2b' },
+          c = { fg = '#2b2b2b', bg = '#ff4400' },
         },
         insert = {
           a = { fg = '#2c2c2c', bg = '#ff6000', gui = 'bold' },
@@ -209,8 +209,8 @@ return {
 
           { get_buffer_count,
             color = { fg = '#ffaa88', bg = 'grey', gui='italic,bold' },
-          }
-
+          },
+          "",
         },
         lualine_b = {
           {

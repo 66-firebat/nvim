@@ -210,7 +210,7 @@ return {
           { get_buffer_count,
             color = { fg = '#00ff00', bg = 'grey', gui='italic,bold' },
           },
-          { function get_separator() return "" end, },
+          { function() return "" end },
         },
         lualine_b = {
           {

@@ -40,9 +40,9 @@ local function get_buffer_count()
   local buffers = #vim.fn.getbufinfo({ buflisted = 1 })
 
   local emoji_map = {
-    [1] = " 󰲠 ", [2] = " 󰲢 ", [3] = " 󰲤 ",
-    [4] = " 󰲦 ", [5] = " 󰲨 ", [6] = " 󰲪 ",
-    [7] = " 󰲬 ", [8] = " 󰲮 ", [9] = " 󰲰 "
+    [1] = "󰲠", [2] = "󰲢", [3] = "󰲤",
+    [4] = "󰲦", [5] = "󰲨", [6] = "󰲪",
+    [7] = "󰲬", [8] = "󰲮", [9] = "󰲰"
   }
 
   local display
@@ -50,9 +50,9 @@ local function get_buffer_count()
   if buffers > 0 and buffers < 10 then
     display = emoji_map[buffers]
   elseif buffers >= 10 then
-    display = " 󰲲 " -- Icon for "10+"
+    display = "󰲲 " -- Icon for "10+"
   else
-    display = "   " -- Icon for 0 or error
+    display = " " -- Icon for 0 or error
   end
 
   return display
@@ -144,7 +144,7 @@ return {
         normal = {
           a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
           b = { fg = '#2b2b2b', bg = '#ff4400' },
-          c = { fg = '#80401a', bg = '#2b2b2b' },
+          c = { fg = '#2b2b2b', bg = '#ff4400' },
         },
         insert = {
           a = { fg = '#2c2c2c', bg = '#ff6000', gui = 'bold' },
@@ -170,7 +170,7 @@ return {
       inactive = {
         a = { fg = '#ff6000', bg = '#80401a', gui = 'bold' },
         b = { fg = '#2b2b2b', bg = '#903716' },
-        c = { fg = '#ff6000', bg = '#80401a' },
+        c = { fg = '#2b2b2b', bg = '#903716' },
       },
     }
 
@@ -205,11 +205,15 @@ return {
       },
       tabline = {
         lualine_a = {get_nvim_stats},
-        lualine_b = {get_buffer_count},
+        lualine_b = {
+          { get_buffer_count,
+            color = { fg = '#ffaa88', bg = 'grey', gui='italic,bold' },
+          }
+        },
         lualine_c = {
           {
             'buffers',
-            mode = 2,
+            mode = 3,
             symbols = {
               modified = ' 󱍸',      -- Text to show when the buffer is modified
               alternate_file = '󱇴 ', -- Text to show to identify the alternate file

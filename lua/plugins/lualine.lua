@@ -29,7 +29,7 @@ local function get_nvim_stats()
     local rss_kb = tonumber(result:match("%d+"))
     if rss_kb then
         local rss_mb = rss_kb / 1024
-        return string.format("󰓾 %d 󰻠 %.1fMB", pid, rss_mb)
+        return string.format("󰓾 %d 󰻠 %.1fMB" %s, pid, rss_mb, "")
     end
 
     return "PID: " .. pid .. " | Mem: ?"

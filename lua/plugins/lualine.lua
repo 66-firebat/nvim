@@ -142,7 +142,7 @@ return {
       }
       local my_custom_theme = {
         normal = {
-          a = { fg = '#2c2c2c', bg = '#ff6000', gui = 'bold' },
+          a = { fg = '#ff6000', bg = '#2c2c2c', gui = 'bold' },
           b = { fg = '#2b2b2b', bg = '#ff6000' },
           c = { fg = '#ff6000', bg = '#2b2b2b' },
         },
@@ -205,8 +205,8 @@ return {
       },
       tabline = {
         lualine_a = {get_nvim_stats},
-        lualine_b = {'buffers'},
-        lualine_c = {},
+        lualine_b = {},
+        lualine_c = {'buffers'},
         lualine_x = {},
         lualine_y = {},
         lualine_z = {'filetype'}

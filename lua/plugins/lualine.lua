@@ -205,7 +205,7 @@ return {
       },
       tabline = {
         lualine_a = {get_nvim_stats},
-        lualine_b = {'filename'},
+        lualine_b = {'buffers'},
         lualine_c = {},
         lualine_x = {},
         lualine_y = {},

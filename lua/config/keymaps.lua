@@ -215,7 +215,7 @@ end, { noremap = true, silent = true, desc = "Exact word search (prompt)" })
 --   vim.cmd('.-1put')
 -- end, { desc = 'put' })
 
--- required function for poening directories in terminal from oil
+-- required function for opening directories in terminal from oil
 local function save_cwd_to_file()
   local cwd = require("oil").get_current_dir()
   local file = io.open(os.getenv("TMPDIR") .. "/.nvim_last_dir", "w")

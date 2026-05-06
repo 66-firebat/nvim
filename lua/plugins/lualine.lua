@@ -181,8 +181,8 @@ return {
         -- Some useful glyphs:
         -- https://www.nerdfonts.com/cheat-sheet
         --        
-        section_separators = { left = '--', right = '--' },
-        component_separators = { left = '', right = '' },
+        section_separators = { left = '', right = '' },
+        component_separators = { left = '', right = '' },
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,
       },
@@ -206,13 +206,13 @@ return {
       tabline = {
         lualine_a = {get_nvim_stats},
         lualine_b = {
-
-          { 'buffers',
-          symbols = {
-            modified = ' 󱍸',      -- Text to show when the buffer is modified
-            alternate_file = '󱇴 ', -- Text to show to identify the alternate file
-          }, }
-
+          {
+            'buffers',
+            symbols = {
+              modified = ' 󱍸',      -- Text to show when the buffer is modified
+              alternate_file = '󱇴 ', -- Text to show to identify the alternate file
+            },
+          }
         },
         lualine_c = {},
         lualine_x = {},

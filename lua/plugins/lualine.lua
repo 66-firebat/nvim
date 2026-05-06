@@ -29,7 +29,7 @@ local function get_nvim_stats()
     local rss_kb = tonumber(result:match("%d+"))
     if rss_kb then
         local rss_mb = rss_kb / 1024
-        return string.format("󰓾 %d : %.1fMB", pid, rss_mb)
+        return string.format("󰓾 %d : %.1fMB %s", pid, rss_mb, "")
     end
 
     return "PID: " .. pid .. " | Mem: ?"
@@ -181,8 +181,8 @@ return {
         -- Some useful glyphs:
         -- https://www.nerdfonts.com/cheat-sheet
         --        
-        section_separators = { left = '', right = '' },
-        component_separators = { left = '', right = '' },
+        section_separators = { left = '', right = '' },
+        component_separators = { left = '', right = '' },
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,
       },
@@ -191,7 +191,7 @@ return {
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {diff},
         lualine_c = { filename },
-        lualine_x = {function() return require("screenkey").get_keys() end , get_buffer_count},
+        lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = { 'searchcount'},
         lualine_z = {{get_file_size, cond = hide_in_width}, {'location', cond = hide_in_width}, 'progress' },
       },
@@ -208,6 +208,7 @@ return {
         lualine_b = {
           {
             'buffers',
+            mode = 2,
             symbols = {
               modified = ' 󱍸',      -- Text to show when the buffer is modified
               alternate_file = '󱇴 ', -- Text to show to identify the alternate file
@@ -217,7 +218,7 @@ return {
         lualine_c = {},
         lualine_x = {},
         lualine_y = {},
-        lualine_z = {'filetype'}
+        lualine_z = {get_buffer_count ,'filetype'}
       },
       extensions = { 'oil' },
     }

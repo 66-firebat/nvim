@@ -15,20 +15,6 @@ local function get_file_size()
   return size .. 'B'
 end
 
-local function get_nvim_stats()
-    local pid = vim.fn.getpid()
-
-    -- Optimized: Use Neovim's internal libuv binding instead of 'ps'
-    -- resident_set_memory returns bytes
-    local rss_bytes = vim.loop.resident_set_memory()
-    local rss_mb = rss_bytes / 1024 / 1024
-
-    -- Include buffer count from the dedicated function
-    local buf_count = get_buffer_count()
-
-    return string.format("󰓾 %d 󰻠 %.1fMB %s %s", pid, rss_mb, "", buf_count)
-end
-
 -- A Lua function to fetch the number of buffers currently open in the nvim instance.
 local function get_buffer_count()
   local buffers = #vim.fn.getbufinfo({ buflisted = 1 })
@@ -51,6 +37,21 @@ local function get_buffer_count()
 
   return display
 end
+
+local function get_nvim_stats()
+    local pid = vim.fn.getpid()
+
+    -- Optimized: Use Neovim's internal libuv binding instead of 'ps'
+    -- resident_set_memory returns bytes
+    local rss_bytes = vim.loop.resident_set_memory()
+    local rss_mb = rss_bytes / 1024 / 1024
+
+    -- Include buffer count from the dedicated function
+    local buf_count = get_buffer_count()
+
+    return string.format("󰓾 %d 󰻠 %.1fMB %s %s", pid, rss_mb, "", buf_count)
+end
+
 
 
 

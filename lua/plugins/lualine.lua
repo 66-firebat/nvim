@@ -29,7 +29,7 @@ local function get_nvim_stats()
     local rss_kb = tonumber(result:match("%d+"))
     if rss_kb then
         local rss_mb = rss_kb / 1024
-        return string.format("PID: %d | %.1fMB", pid, rss_mb)
+        return string.format("󰓾 %d : %.1fMB", pid, rss_mb)
     end
 
     return "PID: " .. pid .. " | Mem: ?"
@@ -143,7 +143,7 @@ return {
       local my_custom_theme = {
         normal = {
           a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#ff4400', bg = '#903716' },
+          b = { fg = '#2b2b2b', bg = '#ff4400' },
           c = { fg = '#80401a', bg = '#2b2b2b' },
         },
         insert = {
@@ -181,8 +181,8 @@ return {
         -- Some useful glyphs:
         -- https://www.nerdfonts.com/cheat-sheet
         --        
-        section_separators = { left = '', right = '' },
-        component_separators = { left = '--', right = '--' },
+        section_separators = { left = '--', right = '--' },
+        component_separators = { left = '', right = '' },
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,
       },
@@ -210,7 +210,7 @@ return {
           { 'buffers',
           symbols = {
             modified = ' 󱍸',      -- Text to show when the buffer is modified
-            alternate_file = '󱆮 ', -- Text to show to identify the alternate file
+            alternate_file = '󱇴 ', -- Text to show to identify the alternate file
           }, }
 
         },

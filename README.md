@@ -1,5 +1,8 @@
-# Notes
+# Todo
+- Redesign Oil bash relocation script to allow for ability to <leader>cd into a terminal buffer at the site of the current directory location 
+- Design a terminal opening keymap (instead of basic <leader>tt), to open a terminal buffer at the current file location
 
+# Notes
 - Resetting Neovim
 	- Neovim has a number of potential complications when attempting to reset the neovim state. The ~/.cache/nvim directory caches LuaJIT compilations of neovim plugins, and may need to be manually removed in order to force neovim to refresh and recompile its plugins
 	- We noticed an issue with snack image renderer (when opening explorer/picker), when invoking treesitter parsers. The solution was to update the snacks plugin from the Lazy deashboard.
@@ -11,6 +14,7 @@
 
 - Keymap peculiarities:
 	- If a keymap such as <leader>t also is in the space of another keymap such as <leader>th, the user will need to press ENTER after the former in order to execute the keymap that anticipates a followup
+	- The keymap to open oil from within a neovim text buffer and from a neovim terminal buffer are different. The latter requires "nvim .", and the <nvim> command can be substituted with the custom "nv" command to allow for oil buffer relocations
 
 - MdMath
 

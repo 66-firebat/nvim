@@ -212,8 +212,7 @@ return {
           }
 
         },
-        lualine_b = {},
-        lualine_c = {
+        lualine_b = {
           {
             'buffers',
             mode = 4,
@@ -223,6 +222,7 @@ return {
             },
           }
         },
+        lualine_c = {},
         lualine_x = {},
         lualine_y = {},
         lualine_z = {'filetype'}

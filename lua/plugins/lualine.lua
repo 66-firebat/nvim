@@ -144,7 +144,7 @@ return {
         normal = {
           a = { fg = '#ff6000', bg = '#2c2c2c', gui = 'bold' },
           b = { fg = '#2b2b2b', bg = '#ff6000' },
-          c = { fg = '#ff6000', bg = '#2b2b2b' },
+          c = { fg = '#80401a', bg = '#ff6000' },
         },
         insert = {
           a = { fg = '#2c2c2c', bg = '#ff6000', gui = 'bold' },

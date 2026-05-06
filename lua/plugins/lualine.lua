@@ -143,7 +143,7 @@ return {
       local my_custom_theme = {
         normal = {
           a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#2b2b2b', bg = '#ff4400' },
+          b = { fg = '#ff4400', bg = '#903716' },
           c = { fg = '#80401a', bg = '#2b2b2b' },
         },
         insert = {
@@ -205,7 +205,13 @@ return {
       },
       tabline = {
         lualine_a = {get_nvim_stats},
-        lualine_b = {'buffers'},
+        lualine_b = {'buffers',
+          symbols = {
+            modified = ' 󱍸',      -- Text to show when the buffer is modified
+            alternate_file = '󱆮 ', -- Text to show to identify the alternate file
+            directory =  '',     -- Text to show when the buffer is a directory
+          },
+        },
         lualine_c = {},
         lualine_x = {},
         lualine_y = {},

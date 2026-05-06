@@ -1,5 +1,8 @@
 # Notes
 
+- Resetting Neovim
+	- Neovim has a number of potential complications when attempting to reset the neovim state. The ~/.cache/nvim directory caches LuaJIT compilations of neovim plugins, and may need to be manually removed in order to force neovim to refresh and recompile its plugins
+
 - Blame a particular line in a file (must be tracked in a git repo)
 `:lua require("gitsigns").blame_line()`
 

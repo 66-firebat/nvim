@@ -40,8 +40,8 @@ map({ "n", "x", "o" }, "L", "g_", opts)
 -- Navigate buffers and center cursor
 -- Add 'nowait' so it fires immediately even if other maps exist
 -- map("n", "<leader>j", ":bnext<CR>zz", { noremap = true, silent = true, nowait = true })
-map("n", "<leader>l", "<Cmd>bnext | normal! zz<CR>", opts)
-map("n", "<leader>h", ":bprevious<CR>zz", opts)
+map("n", "<leader>j", "<Cmd>bnext | normal! zz<CR>", opts)
+map("n", "<leader>k", ":bprevious<CR>zz", opts)
 
 -- Panes resizing
 map("n", "+", ":vertical resize +5<CR>")
@@ -68,9 +68,6 @@ map("n", "g#", "g#zz", opts)
 
 -- Split line with X
 map("n", "X", ":keeppatterns substitute/\\s*\\%#\\s*/\\r/e <bar> normal! ==^<cr>", { silent = true })
-
--- ctrl + x to cut full line
-map("n", "<C-x>", "dd", opts)
 
 -- Select all
 map("n", "<C-a>", "ggVG", opts)
@@ -102,31 +99,27 @@ map('n', '<leader>L', ':cd %:h<CR>', {
   desc = '[L]ocate file in system'
 })
 
--- This file defines a Lua function to open a terminal and initialize tmux.
+-- The function that will be called by the keymap.
+-- local function open_tmux_terminal()
+--   -- The command to open a terminal and run the 'tmux' command.
+--   -- `:terminal` opens a new terminal in a horizontal split.
+--   local cmd_string = 'terminal tmux'
+--   
+--   -- We use vim.cmd() to execute the command directly.
+--   vim.cmd(cmd_string)
+-- end
 
 -- The function that will be called by the keymap.
-local function open_tmux_terminal()
-  -- The command to open a terminal and run the 'tmux' command.
-  -- `:terminal` opens a new terminal in a horizontal split.
-  local cmd_string = 'terminal tmux'
-  
-  -- We use vim.cmd() to execute the command directly.
-  vim.cmd(cmd_string)
-end
-
--- This file defines a Lua function to open a vertical split terminal and then initialize a Tmux session within it.
-
--- The function that will be called by the keymap.
-local function open_tmux_vsplit()
-  -- The command to open a terminal in a vertical split (`vsplit`)
-  -- and then run the tmux command.
-  -- `tmux attach || tmux new-session` will attach to an existing session
-  -- or create a new one if none exists.
-  local cmd_string = 'vsplit | terminal tmux attach || tmux new-session'
-  
-  -- We use vim.cmd() to execute the command directly.
-  vim.cmd(cmd_string)
-end
+-- local function open_tmux_vsplit()
+--   -- The command to open a terminal in a vertical split (`vsplit`)
+--   -- and then run the tmux command.
+--   -- `tmux attach || tmux new-session` will attach to an existing session
+--   -- or create a new one if none exists.
+--   local cmd_string = 'vsplit | terminal tmux attach || tmux new-session'
+--   
+--   -- We use vim.cmd() to execute the command directly.
+--   vim.cmd(cmd_string)
+-- end
 
 --[[ map('n', '<leader>T', open_tmux_vsplit, {
   desc = 'Windowed Tmux'
@@ -187,7 +180,7 @@ map('n', '<M-e>', open_oil, { desc = 'open oil' })
 
 -- Simple exact-word search on Shift+S
 vim.keymap.set("n", "S", function()
-  local q = vim.fn.input("Regex Pattern: \\< ...\\>")
+  local q = vim.fn.input("Exact Pattern: \\< ...\\>")
   if q == "" then return end
   -- escape slash so the search pattern won't break if you type '/'
   q = vim.fn.escape(q, "/")
@@ -254,12 +247,12 @@ map("v", "K", ":m '<-2<CR>gv=gv", opts)
 -- map( "n", "<C-h>", "<Plug>GoNMLineLeft", {} )
 -- map( "n", "<C-l>", "<Plug>GoNMLineRight", {} )
 
--- Sets flash utility to f key and saves position to the jump list
 -- vim.keymap.set({ "n", "x", "o" }, "f", function()
 --     vim.cmd("normal! m'")
 --     require('flash').jump()
 -- end, { desc = "Flash Jump (with jump mark)" })
 
+-- Sets flash utility to f key and saves position to the jump list
 vim.keymap.set({ "n", "x", "o" }, "f", function()
     vim.cmd("normal! m'")
     
@@ -279,11 +272,6 @@ vim.keymap.set({ "n", "x", "o" }, "f", function()
         end
     })
 end, { desc = "Flash Jump (Search Sync Fixed)" })
-
--- keymap to enable screenkeys in lualine
-vim.keymap.set("n", "<leader>ts", function()
-    require("screenkey").toggle_statusline_component()
-end, { desc = "Toggle screenkey statusline component" })
 
 -- toggle julia LSP on/off
 -- vim.keymap.set('n', '<leader>tj', function()
@@ -332,21 +320,9 @@ vim.keymap.set({"n", "x", "v"}, ";", function()
   require("vai.jump").start()
 end, { noremap = true, desc = "[vai]: toggle line jump" })-- require("lualine").setup({
 
+-- Jumps to marks (respecting mark column positions)
 vim.keymap.set('n', "'", "`", { desc = "Jump to exact mark column" })
 vim.keymap.set('n', '"', "'", { desc = "Jump to mark line start" })
-
---     -- other options ...
---     sections = {
---         -- other sections ...
---         lualine_c = {
---             -- other components ...
---             function()
---                 return require("screenkey").get_keys()
---             end,
---         },
---     },
--- })
-
 
 
 -- Pipes zoxide output to an oil buffer

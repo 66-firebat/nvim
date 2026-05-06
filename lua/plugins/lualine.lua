@@ -202,7 +202,7 @@ return {
         lualine_a = {
           { get_nvim_stats,
             color = { fg = '#2b2b2b', bg = '#903716', gui='bold' },
-            separator = { left = '', right = '' },
+            separator = { left = '', right = '' },
           },
         },
         lualine_b = {

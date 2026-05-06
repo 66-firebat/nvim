@@ -143,7 +143,7 @@ return {
       local my_custom_theme = {
         normal = {
           a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#2b2b2b', bg = '#ff4400' },
+          b = { fg = '#2b2b2b', bg = '#903716' },
           c = { fg = '#2b2b2b', bg = '#ff4400' },
         },
         insert = {
@@ -169,7 +169,7 @@ return {
       },
       inactive = {
         a = { fg = '#ff6000', bg = '#80401a', gui = 'bold' },
-        b = { fg = '#2b2b2b', bg = '#903716' },
+        b = { fg = '#903716', bg = '#2b2b2b' },
         c = { fg = '#2b2b2b', bg = '#903716' },
       },
     }
@@ -210,7 +210,9 @@ return {
           { get_buffer_count,
             color = { fg = '#00ff00', bg = 'grey', gui='italic,bold' },
           },
-          { function() return "" end },
+          { function() return "" end ,
+            color = { fg = 'grey', bg = '#0000ff', gui='italic,bold' },
+          },
         },
         lualine_b = {
           {

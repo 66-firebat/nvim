@@ -16,23 +16,17 @@ local function get_file_size()
 end
 
 local function get_nvim_stats()
-    -- Get the PID of the current Neovim process
     local pid = vim.fn.getpid()
     
-    -- Run a shell command to get the RSS memory in KB
-    -- 'ps -p [pid] -o rss=' returns just the number
-    local handle = io.popen("ps -p " .. pid .. " -o rss=")
-    local result = handle:read("*a")
-    handle:close()
-    
-    -- Clean up the output and convert to MB
-    local rss_kb = tonumber(result:match("%d+"))
-    if rss_kb then
-        local rss_mb = rss_kb / 1024
-        return string.format("󰓾 %d 󰻠 %.1fMB" %s, pid, rss_mb, "")
-    end
+    -- Optimized: Use Neovim's internal libuv binding instead of 'ps'
+    -- resident_set_memory returns bytes
+    local rss_bytes = vim.loop.resident_set_memory()
+    local rss_mb = rss_bytes / 1024 / 1024
 
-    return "PID: " .. pid .. " | Mem: ?"
+    -- Corrected string.format:
+    -- 1. Use commas between arguments.
+    -- 2. Ensure all placeholders (%d, %.1f, %s) have matching variables.
+    return string.format("󰓾 %d 󰻠 %.1fMB %s", pid, rss_mb, "")
 end
 
 -- A Lua function to fetch the number of buffers currently open in the nvim instance.

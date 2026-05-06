@@ -207,11 +207,11 @@ return {
         lualine_a = {
           get_nvim_stats,
 
-          { get_buffer_count,
-            color = { fg = '#00ff00', bg = 'grey', gui='italic,bold' },
-          },
           { function() return "" end ,
             color = { fg = 'grey', bg = '#ff00ff', gui='italic,bold' },
+          },
+          { get_buffer_count,
+            color = { fg = '#00ff00', bg = 'grey', gui='italic,bold' },
           },
         },
         lualine_b = {

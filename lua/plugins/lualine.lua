@@ -17,16 +17,16 @@ end
 
 local function get_nvim_stats()
     local pid = vim.fn.getpid()
-    
+
     -- Optimized: Use Neovim's internal libuv binding instead of 'ps'
     -- resident_set_memory returns bytes
     local rss_bytes = vim.loop.resident_set_memory()
     local rss_mb = rss_bytes / 1024 / 1024
 
-    -- Corrected string.format:
-    -- 1. Use commas between arguments.
-    -- 2. Ensure all placeholders (%d, %.1f, %s) have matching variables.
-    return string.format("󰓾 %d 󰻠 %.1fMB %s", pid, rss_mb, "")
+    -- Include buffer count from the dedicated function
+    local buf_count = get_buffer_count()
+
+    return string.format("󰓾 %d 󰻠 %.1fMB %s %s", pid, rss_mb, "", buf_count)
 end
 
 -- A Lua function to fetch the number of buffers currently open in the nvim instance.
@@ -201,13 +201,6 @@ return {
         lualine_a = {
           { get_nvim_stats,
             color = { fg = '#2b2b2b', bg = '#903716', gui='bold' },
-          },
-
-          -- { function() return "" end ,
-          --   color = { fg = 'grey', bg = '#ff4400', gui='italic,bold' },
-          -- },
-          { get_buffer_count,
-            color = { fg = '#2b2b2b', bg = '#903716', gui='italic,bold' },
             separator = { left = '', right = '' },
           },
         },

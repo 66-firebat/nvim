@@ -169,7 +169,7 @@ return {
       },
       inactive = {
         a = { fg = '#ff6000', bg = '#80401a', gui = 'bold' },
-        b = { fg = '#ff6000', bg = '#80401a' },
+        b = { fg = '#2b2b2b', bg = '#80401a' },
         c = { fg = '#ff6000', bg = '#80401a' },
       },
     }
@@ -182,7 +182,7 @@ return {
         -- https://www.nerdfonts.com/cheat-sheet
         --        
         section_separators = { left = '', right = '' },
-        component_separators = { left = '', right = '' },
+        component_separators = { left = '', right = '' },
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,
       },

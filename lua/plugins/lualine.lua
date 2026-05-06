@@ -142,7 +142,7 @@ return {
       }
       local my_custom_theme = {
         normal = {
-          a = { fg = '#ff6000', bg = '#2c2c2c', gui = 'bold' },
+          a = { fg = '#2b2b2b', bg = '#80401a', gui = 'bold' },
           b = { fg = '#2b2b2b', bg = '#ff6000' },
           c = { fg = '#80401a', bg = '#ff6000' },
         },

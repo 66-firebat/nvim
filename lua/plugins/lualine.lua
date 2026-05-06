@@ -207,11 +207,12 @@ return {
         lualine_a = {
           get_nvim_stats,
 
-          { function() return "" end ,
-            color = { fg = 'grey', bg = '#ff00ff', gui='italic,bold' },
-          },
+          -- { function() return "" end ,
+          --   color = { fg = 'grey', bg = '#ff4400', gui='italic,bold' },
+          -- },
           { get_buffer_count,
             color = { fg = '#00ff00', bg = 'grey', gui='italic,bold' },
+            separator = { left = '', right = '' },
           },
         },
         lualine_b = {

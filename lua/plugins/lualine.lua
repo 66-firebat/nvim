@@ -176,13 +176,13 @@ return {
 
     require('lualine').setup {
       options = {
-        icons_enabled = true,
+        icons_enabled = false,
         theme = my_custom_theme, -- Set theme based on environment variable
         -- Some useful glyphs:
         -- https://www.nerdfonts.com/cheat-sheet
         --        
-        section_separators = { left = '|', right = '|' },
-        component_separators = { left = '', right = '' },
+        section_separators = { left = '', right = '' },
+        component_separators = { left = '', right = '' },
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,
       },
@@ -209,7 +209,7 @@ return {
         lualine_c = {},
         lualine_x = {},
         lualine_y = {},
-        lualine_z = {}
+        lualine_z = {'filetype'}
       },
       extensions = { 'oil' },
     }

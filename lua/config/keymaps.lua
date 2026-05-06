@@ -132,13 +132,6 @@ end
   desc = 'Windowed Tmux'
 }) ]]
 
--- Opens a vsplit terminal
-map('n', '<leader>T', function()
-  vim.cmd('vsplit | terminal')
-end, {
-  desc = 'Windowed Tmux'
-})
-
 -- New keymap to open a vsplit terminal, start tmux, and run Julia.
 local function open_julia_terminal()
   local cmd_string = 'vsplit | terminal tmux new-session -A -s julia_session'
@@ -386,3 +379,17 @@ end)
 
 -- Exits out of terminal mode into terminal normal mode
 vim.keymap.set('t', 'jk', [[<C-\><C-n>]], { desc = "Exit terminal mode" })
+
+-- Opens a vsplit terminal
+map('n', '<leader>T', function()
+  vim.cmd('vsplit | terminal')
+end, {
+  desc = 'Windowed Tmux'
+})
+
+-- Opens a terminal on a separate buffer
+map('n', '<leader>t', function()
+  vim.cmd('terminal')
+end, {
+  desc = 'Windowed Tmux'
+})

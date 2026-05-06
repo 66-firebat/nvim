@@ -29,7 +29,7 @@ local function get_nvim_stats()
     local rss_kb = tonumber(result:match("%d+"))
     if rss_kb then
         local rss_mb = rss_kb / 1024
-        return string.format("󰓾 %d ┃ %.1fMB", pid, rss_mb)
+        return string.format("󰓾 %d 󰻠 %.1fMB", pid, rss_mb)
     end
 
     return "PID: " .. pid .. " | Mem: ?"
@@ -190,7 +190,7 @@ return {
         lualine_a = {mode, get_git_branch, diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {diff},
-        lualine_c = { filename },
+        lualine_c = { { 'filename', path = 2 } },
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = { 'searchcount'},
         lualine_z = {{get_file_size, cond = hide_in_width}, {'location', cond = hide_in_width}, 'progress' },
@@ -206,7 +206,7 @@ return {
       tabline = {
         lualine_a = {
           { get_nvim_stats,
-            color = { fg = '#2b2b2b', bg = '#903716', gui='italic,bold' },
+            color = { fg = '#2b2b2b', bg = '#903716', gui='bold' },
           },
 
           -- { function() return "" end ,
@@ -230,7 +230,10 @@ return {
         lualine_c = {},
         lualine_x = {},
         lualine_y = {},
-        lualine_z = {'filetype'}
+        lualine_z = {
+          'filetype',
+          icon_only = true,
+        }
       },
       extensions = { 'oil' },
     }

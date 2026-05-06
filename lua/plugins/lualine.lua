@@ -208,9 +208,9 @@ return {
           get_nvim_stats,
 
           { get_buffer_count,
-            color = { fg = '#ffaa88', bg = 'grey', gui='italic,bold' },
+            color = { fg = '#00ff00', bg = 'grey', gui='italic,bold' },
           },
-          "",
+          { function get_separator() return "" end, },
         },
         lualine_b = {
           {

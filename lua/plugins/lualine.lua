@@ -143,7 +143,7 @@ return {
       local my_custom_theme = {
         normal = {
           a = { fg = '#2c2c2c', bg = '#ff6000', gui = 'bold' },
-          b = { fg = '#2b2b2b', bg = '#80401a' },
+          b = { fg = '#2b2b2b', bg = '#ff6000' },
           c = { fg = '#ff6000', bg = '#2b2b2b' },
         },
         insert = {
@@ -181,7 +181,7 @@ return {
         -- Some useful glyphs:
         -- https://www.nerdfonts.com/cheat-sheet
         --        
-        section_separators = { left = '', right = '' },
+        section_separators = { left = '|', right = '|' },
         component_separators = { left = '', right = '' },
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,

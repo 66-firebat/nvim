@@ -29,7 +29,7 @@ local function get_nvim_stats()
     local rss_kb = tonumber(result:match("%d+"))
     if rss_kb then
         local rss_mb = rss_kb / 1024
-        return string.format("󰓾 %d : %.1fMB", pid, rss_mb)
+        return string.format("󰓾 %d ┃ %.1fMB", pid, rss_mb)
     end
 
     return "PID: " .. pid .. " | Mem: ?"
@@ -143,7 +143,7 @@ return {
       local my_custom_theme = {
         normal = {
           a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#2b2b2b', bg = '#903716' },
+          b = { fg = '#2b2b2b', bg = '#ff4400' },
           c = { fg = '#903716', bg = '#2b2b2b' },
         },
         insert = {
@@ -205,13 +205,15 @@ return {
       },
       tabline = {
         lualine_a = {
-          get_nvim_stats,
+          { get_nvim_stats,
+            color = { fg = '#2b2b2b', bg = '#903716', gui='italic,bold' },
+          },
 
           -- { function() return "" end ,
           --   color = { fg = 'grey', bg = '#ff4400', gui='italic,bold' },
           -- },
           { get_buffer_count,
-            color = { fg = '#00ff00', bg = 'grey', gui='italic,bold' },
+            color = { fg = '#2b2b2b', bg = '#903716', gui='italic,bold' },
             separator = { left = '', right = '' },
           },
         },

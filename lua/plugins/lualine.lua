@@ -212,7 +212,7 @@ return {
           -- },
           { get_buffer_count,
             color = { fg = '#00ff00', bg = 'grey', gui='italic,bold' },
-            separator = { left = '', right = '' },
+            separator = { left = '', right = '' },
           },
         },
         lualine_b = {

@@ -144,7 +144,7 @@ return {
         normal = {
           a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
           b = { fg = '#2b2b2b', bg = '#ff4400' },
-          c = { fg = '#2b2b2b', bg = '#ff4400' },
+          c = { fg = '#ff4400', bg = '#2b2b2b' },
         },
         insert = {
           a = { fg = '#2c2c2c', bg = '#ff6000', gui = 'bold' },
@@ -213,7 +213,7 @@ return {
         lualine_c = {
           {
             'buffers',
-            mode = 3,
+            mode = 4,
             symbols = {
               modified = ' 󱍸',      -- Text to show when the buffer is modified
               alternate_file = '󱇴 ', -- Text to show to identify the alternate file

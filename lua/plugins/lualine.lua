@@ -144,7 +144,7 @@ return {
         normal = {
           a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
           b = { fg = '#2b2b2b', bg = '#903716' },
-          c = { fg = '#2b2b2b', bg = '#ff4400' },
+          c = { fg = '#903716', bg = '#2b2b2b' },
         },
         insert = {
           a = { fg = '#2c2c2c', bg = '#ff6000', gui = 'bold' },
@@ -211,7 +211,7 @@ return {
             color = { fg = '#00ff00', bg = 'grey', gui='italic,bold' },
           },
           { function() return "" end ,
-            color = { fg = 'grey', bg = '#0000ff', gui='italic,bold' },
+            color = { fg = 'grey', bg = '#ff00ff', gui='italic,bold' },
           },
         },
         lualine_b = {

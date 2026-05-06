@@ -204,9 +204,9 @@ return {
         lualine_z = {},
       },
       tabline = {
-        lualine_a = {},
-        lualine_b = {
-          get_nvim_stats,
+        lualine_a = {get_nvim_stats},
+        lualine_b = {get_buffer_count},
+        lualine_c = {
           {
             'buffers',
             mode = 2,
@@ -216,9 +216,8 @@ return {
             },
           }
         },
-        lualine_c = {},
         lualine_x = {},
-        lualine_y = {get_buffer_count},
+        lualine_y = {},
         lualine_z = {'filetype'}
       },
       extensions = { 'oil' },

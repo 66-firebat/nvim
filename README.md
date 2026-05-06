@@ -9,6 +9,9 @@
 
 - Since the migration to the main branch, nvim-treesitter has been reconfigured. Parsers were initially loaded based on the filetype, but now this has been disabled due to popups on the UI. In order to install parsers, visit the plugin file and alter the .update() method to .install() accordingly AFTER the language has been inserted into the language table
 
+- Keymap peculiarities:
+	- If a keymap such as <leader>t also is in the space of another keymap such as <leader>th, the user will need to press ENTER after the former in order to execute the keymap that anticipates a followup
+
 - MdMath
 
 MdMath has to be rebuilt after installing the necessary dependnecies (imagemagick, librsvg, nodejs includes npm) via the :MdMath build. DO NOT place document code notation (```) prior to mdmath notation or it will not render

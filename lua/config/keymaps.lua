@@ -381,14 +381,14 @@ end)
 vim.keymap.set('t', 'jk', [[<C-\><C-n>]], { desc = "Exit terminal mode" })
 
 -- Opens a vsplit terminal
-map('n', '<leader>T', function()
+map('n', '<leader>tT', function()
   vim.cmd('vsplit | terminal')
 end, {
   desc = 'Windowed Tmux'
 })
 
 -- Opens a terminal on a separate buffer
-map('n', '<leader>t', function()
+map('n', '<leader>tt', function()
   vim.cmd('terminal')
 end, {
   desc = 'Windowed Tmux'

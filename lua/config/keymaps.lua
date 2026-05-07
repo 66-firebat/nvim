@@ -370,3 +370,6 @@ map('n', '<leader>tt', function()
 end, {
   desc = 'Windowed Tmux'
 })
+
+-- Switch to alternate buffer, map to <leader> + Tab
+vim.keymap.set('n', '<leader><Tab>', '<C-^>', { desc = "Switch to alternate buffer" })

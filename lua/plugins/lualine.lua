@@ -38,6 +38,40 @@ local function get_buffer_count()
   return display
 end
 
+-- Obtains the memory usage of a single neovim terminal buffer
+local function get_terminal_rss()
+    -- 1. Check if the current buffer is a terminal
+    if vim.bo.buftype ~= "terminal" then
+        return "Not a Term"
+    end
+
+    -- 2. Get the PID of the process running in the terminal
+    -- This is the PID of the shell (e.g., Bash)
+    local term_pid = vim.b.terminal_job_pid
+    if not term_pid then return "No PID" end
+
+    -- 3. Read RSS from /proc/[pid]/statm (Standard Linux/NixOS way)
+    -- statm format: size resident shared text lib data dirty
+    -- The 2nd value is the resident set size in pages
+    local f = io.open("/proc/" .. term_pid .. "/statm", "r")
+    if f then
+        local content = f:read("*all")
+        f:close()
+        local stats = {}
+        for v in string.gmatch(content, "%S+") do
+            table.insert(stats, v)
+        end
+        
+        -- RSS is the 2nd field. Pages are usually 4096 bytes.
+        local rss_pages = tonumber(stats[2])
+        local rss_mb = (rss_pages * 4096) / 1024 / 1024
+        
+        return string.format("󰓾 %d  %.1fMB", term_pid, rss_mb)
+    end
+
+    return "PID Error"
+end
+
 local function get_nvim_stats()
     local pid = vim.fn.getpid()
 
@@ -200,7 +234,7 @@ return {
       },
       tabline = {
         lualine_a = {
-          { get_nvim_stats,
+          { get_terminal_rss,
             color = { fg = '#2b2b2b', bg = '#903f16', gui='bold' },
             separator = { left = '', right = '' },
           },

@@ -354,7 +354,6 @@ vim.keymap.set("n", "<M-f>", function()
 end)
 
 -- Exits out of terminal mode into terminal normal mode
--- vim.keymap.set('t', 'jk', [[<C-\><C-n>]], { desc = "Exit terminal mode" })
 vim.keymap.set('t', '<C-;>', [[<C-\><C-n>]], { desc = "Exit terminal mode" })
 
 -- Opens a vsplit terminal

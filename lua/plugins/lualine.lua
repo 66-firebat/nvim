@@ -210,6 +210,7 @@ return {
         a = { fg = '#ff5500', bg = '#903f16', gui = 'bold' },
         b = { fg = '#903f16', bg = '#2b2b2b' },
         c = { fg = '#903f16', bg = '#2b2b2b' },
+        z = { fg = '#903f16', bg = '#2b2b2b' },
       },
     }
 

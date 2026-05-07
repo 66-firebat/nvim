@@ -245,11 +245,17 @@ return {
       tabline = {
         lualine_a = {
           { get_nvim_stats,
-            color = { fg = '#2b2b2b', bg = '#903f16', gui='bold' },
+            color = { fg = '#2b2b2b', bg = '#ff5500', gui='bold' },
             separator = { left = '', right = '' },
           },
         },
         lualine_b = {
+          Get_buffer_stats,
+        },
+        lualine_c = {},
+        lualine_x = {},
+        lualine_y = {},
+        lualine_z = {
           {
             'buffers',
             mode = 4,
@@ -257,13 +263,7 @@ return {
               modified = ' 󱍸',      -- Text to show when the buffer is modified
               alternate_file = '󱇴 ', -- Text to show to identify the alternate file
             },
-          }
-        },
-        lualine_c = {},
-        lualine_x = {},
-        lualine_y = {},
-        lualine_z = {
-          Get_buffer_stats,
+          },
           {
             'filetype',
             icon_only = true,

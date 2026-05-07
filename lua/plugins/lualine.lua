@@ -230,10 +230,19 @@ return {
         lualine_a = {mode, get_git_branch, diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {diff},
-        lualine_c = { { 'filename', path = 2 } },
+        lualine_c = {},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
-        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress' },
+        lualine_z = {'searchcount',
+          {
+            'buffers',
+            mode = 3,
+            symbols = {
+              modified = ' 󱍸',      -- Text to show when the buffer is modified
+              alternate_file = '󱇴 ', -- Text to show to identify the alternate file
+            },
+          },
+          {'location', cond = hide_in_width}, 'progress' },
       },
       inactive_sections = {
         lualine_a = {},
@@ -262,14 +271,7 @@ return {
         lualine_x = {},
         lualine_y = {},
         lualine_z = {
-          {
-            'buffers',
-            mode = 4,
-            symbols = {
-              modified = ' 󱍸',      -- Text to show when the buffer is modified
-              alternate_file = '󱇴 ', -- Text to show to identify the alternate file
-            },
-          },
+          { 'filename', path = 2 }
         }
       },
       extensions = { 'oil' },

@@ -28,6 +28,10 @@ MdMath has to be rebuilt after installing the necessary dependnecies (imagemagic
 	- Shows commands installed in Snacks picker
   `:lua Snacks.picker.commands()`
 
+- Text manipulation:
+	- Designates the <C-j> and <C-h> lateral movements in visual mode (not in normal mode)
+	- Not sure where this comes from, but in insert mode, <C-h/j> appears to delete words in the direction of the movement
+
 - nvim-treesitter
 	- Nvim treesitters refactor to main requires a new lazy configuration.
 	- https://github.com/nvim-lua/kickstart.nvim/pull/1748#issuecomment-3740311930

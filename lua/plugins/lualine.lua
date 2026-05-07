@@ -207,7 +207,7 @@ return {
         c = { fg = '#ff5500', bg = 'none' },
       },
       inactive = {
-        a = { fg = '#ff5500', bg = '#903f16', gui = 'bold' },
+        a = { fg = '#903f16', bg = '#2b2b2b', gui = 'bold' },
         b = { fg = '#903f16', bg = '#2b2b2b' },
         c = { fg = '#903f16', bg = '#2b2b2b' },
         z = { fg = '#903f16', bg = '#2b2b2b' },
@@ -229,11 +229,14 @@ return {
       sections = {
         lualine_a = {mode, get_git_branch, diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
-        lualine_b = {diff},
+        lualine_b = {
+          diff,
+          {'location', cond = hide_in_width}, 'progress' },
+        },
         lualine_c = {},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
-        lualine_z = {'searchcount',
+        lualine_z = {
           {
             'buffers',
             mode = 3,
@@ -242,7 +245,6 @@ return {
               alternate_file = '󱇴 ', -- Text to show to identify the alternate file
             },
           },
-          {'location', cond = hide_in_width}, 'progress' },
       },
       inactive_sections = {
         lualine_a = {},
@@ -261,6 +263,7 @@ return {
         },
         lualine_b = {
           Get_buffer_stats,
+          'searchcount'
         },
         lualine_c = {
           {
@@ -271,7 +274,10 @@ return {
         lualine_x = {},
         lualine_y = {},
         lualine_z = {
-          { 'filename', path = 2 }
+          {
+            'filename', path = 2, 
+            color = { fg = '#903f16', bg = '#2b2b2b', gui='bold' },
+          }
         }
       },
       extensions = { 'oil' },

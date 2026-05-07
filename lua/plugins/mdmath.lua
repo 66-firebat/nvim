@@ -7,9 +7,9 @@
     -- Hide the text when in the Insert Mode.
              hide_on_insert = true,
              internal_scale = 1.0,
-             dynamic_scale = 1.0,
+             dynamic = true,
+             dynamic_scale = 3.0,
              anticonceal = true,
-
     }
 
     -- The build is already done by default in lazy.nvim, so you don't need

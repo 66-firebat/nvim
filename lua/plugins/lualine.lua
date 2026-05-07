@@ -209,7 +209,7 @@ return {
       inactive = {
         a = { fg = '#ff5500', bg = '#903f16', gui = 'bold' },
         b = { fg = '#903f16', bg = '#2b2b2b' },
-        c = { fg = '#2b2b2b', bg = '#903f16' },
+        c = { fg = '#903f16', bg = '#2b2b2b' },
       },
     }
 
@@ -245,14 +245,19 @@ return {
       tabline = {
         lualine_a = {
           { get_nvim_stats,
-            color = { fg = '#2b2b2b', bg = '#ff5500', gui='bold' },
+            color = { fg = '#2b2b2b', bg = '#903f16', gui='bold' },
             separator = { left = '', right = '' },
           },
         },
         lualine_b = {
           Get_buffer_stats,
         },
-        lualine_c = {},
+        lualine_c = {
+          {
+            'filetype',
+            icon_only = true,
+          }
+        },
         lualine_x = {},
         lualine_y = {},
         lualine_z = {
@@ -264,10 +269,6 @@ return {
               alternate_file = '󱇴 ', -- Text to show to identify the alternate file
             },
           },
-          {
-            'filetype',
-            icon_only = true,
-          }
         }
       },
       extensions = { 'oil' },

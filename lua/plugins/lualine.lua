@@ -38,38 +38,48 @@ local function get_buffer_count()
   return display
 end
 
--- Obtains the memory usage of a single neovim terminal buffer
-local function get_terminal_rss()
-    -- 1. Check if the current buffer is a terminal
-    if vim.bo.buftype ~= "terminal" then
-        return "Not a Term"
+local function get_process_tree_rss(parent_pid)
+  local total_rss_pages = 0
+  local children = {}
+
+  -- 1. Get RSS of the current PID
+  local statm = io.open("/proc/" .. parent_pid .. "/statm", "r")
+  if statm then
+    local content = statm:read("*all")
+    statm:close()
+    local rss = content:match("%d+%s+(%d+)")
+    total_rss_pages = total_rss_pages + (tonumber(rss) or 0)
+  end
+
+  -- 2. Find all children of this PID
+  -- NixOS/Linux stores children in /proc/[pid]/task/[pid]/children
+  local child_file = io.open("/proc/" .. parent_pid .. "/task/" .. parent_pid .. "/children", "r")
+  if child_file then
+    local content = child_file:read("*all")
+    child_file:close()
+    for child_pid in content:gmatch("%d+") do
+      table.insert(children, tonumber(child_pid))
     end
+  end
 
-    -- 2. Get the PID of the process running in the terminal
-    -- This is the PID of the shell (e.g., Bash)
-    local term_pid = vim.b.terminal_job_pid
-    if not term_pid then return "No PID" end
+  -- 3. Recursively add children's memory
+  for _, child_pid in ipairs(children) do
+    total_rss_pages = total_rss_pages + get_process_tree_rss(child_pid)
+  end
 
-    -- 3. Read RSS from /proc/[pid]/statm (Standard Linux/NixOS way)
-    -- statm format: size resident shared text lib data dirty
-    -- The 2nd value is the resident set size in pages
-    local f = io.open("/proc/" .. term_pid .. "/statm", "r")
-    if f then
-        local content = f:read("*all")
-        f:close()
-        local stats = {}
-        for v in string.gmatch(content, "%S+") do
-            table.insert(stats, v)
-        end
-        
-        -- RSS is the 2nd field. Pages are usually 4096 bytes.
-        local rss_pages = tonumber(stats[2])
-        local rss_mb = (rss_pages * 4096) / 1024 / 1024
-        
-        return string.format("󰓾 %d  %.1fMB", term_pid, rss_mb)
-    end
+  return total_rss_pages
+end
 
-    return "PID Error"
+function GetTermTreeStats()
+  if vim.bo.buftype ~= "terminal" then return "Not a Term" end
+  
+  local root_pid = vim.b.terminal_job_pid
+  if not root_pid then return "No PID" end
+
+  local total_pages = get_process_tree_rss(root_pid)
+  local total_mb = (total_pages * 4096) / 1024 / 1024
+
+  return string.format("󱔗 %-5d | %.1f MB", root_pid, total_mb)
 end
 
 local function get_nvim_stats()
@@ -234,7 +244,7 @@ return {
       },
       tabline = {
         lualine_a = {
-          { get_terminal_rss,
+          { get_nvim_stats,
             color = { fg = '#2b2b2b', bg = '#903f16', gui='bold' },
             separator = { left = '', right = '' },
           },
@@ -253,6 +263,7 @@ return {
         lualine_x = {},
         lualine_y = {},
         lualine_z = {
+          GetTermTreeStats,
           {
             'filetype',
             icon_only = true,

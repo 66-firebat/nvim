@@ -49,7 +49,7 @@ local function get_nvim_stats()
     -- Include buffer count from the dedicated function
     local buf_count = get_buffer_count()
 
-    return string.format("󰓾 %d 󰻠 %.1fMB %s %s", pid, rss_mb, "", buf_count)
+    return string.format("%s %s 󰓾 %d 󰻠 %.1fMB", "", buf_count, pid, rss_mb)
 end
 
 
@@ -202,7 +202,7 @@ return {
         lualine_a = {
           { get_nvim_stats,
             color = { fg = '#2b2b2b', bg = '#903f16', gui='bold' },
-            separator = { left = '', right = '' },
+            separator = { left = '', right = '' },
           },
         },
         lualine_b = {

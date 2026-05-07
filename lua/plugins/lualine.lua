@@ -12,7 +12,7 @@ local function get_file_size()
     return '0B'
   end
 
-  return size .. 'B'
+  return ': ' .. size .. 'B'
 end
 
 -- A Lua function to fetch the number of buffers currently open in the nvim instance.
@@ -70,8 +70,8 @@ local function get_process_tree_rss(parent_pid)
   return total_rss_pages
 end
 
-function GetTermTreeStats()
-  if vim.bo.buftype ~= "terminal" then return "Not a Term" end
+function Get_buffer_stats()
+  if vim.bo.buftype ~= "terminal" then return get_file_size() end
   
   local root_pid = vim.b.terminal_job_pid
   if not root_pid then return "No PID" end
@@ -79,7 +79,7 @@ function GetTermTreeStats()
   local total_pages = get_process_tree_rss(root_pid)
   local total_mb = (total_pages * 4096) / 1024 / 1024
 
-  return string.format("󱔗 %-5d | %.1f MB", root_pid, total_mb)
+  return string.format("󰓾 %-5d | %.1f MB", root_pid, total_mb)
 end
 
 local function get_nvim_stats()
@@ -93,7 +93,7 @@ local function get_nvim_stats()
     -- Include buffer count from the dedicated function
     local buf_count = get_buffer_count()
 
-    return string.format("󰓾 %5d  %.1fMB %s %s", pid, rss_mb, "", buf_count)
+    return string.format(" %5d  %.1fMB %s %s", pid, rss_mb, "", buf_count)
 end
 
 
@@ -231,8 +231,8 @@ return {
         lualine_b = {diff},
         lualine_c = { { 'filename', path = 2 } },
         lualine_x = {function() return require("screenkey").get_keys() end },
-        lualine_y = { 'searchcount'},
-        lualine_z = {{get_file_size, cond = hide_in_width}, {'location', cond = hide_in_width}, 'progress' },
+        lualine_y = {},
+        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress' },
       },
       inactive_sections = {
         lualine_a = {},
@@ -263,7 +263,7 @@ return {
         lualine_x = {},
         lualine_y = {},
         lualine_z = {
-          GetTermTreeStats,
+          Get_buffer_stats,
           {
             'filetype',
             icon_only = true,
@@ -274,7 +274,6 @@ return {
     }
   end,
 }
-
 
 
 

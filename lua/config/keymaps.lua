@@ -130,9 +130,9 @@ local function open_julia_terminal()
   local cmd_string = 'vsplit | terminal tmux new-session -A -s julia_session'
   vim.cmd(cmd_string)
 end
-map('n', '<leader>J', open_julia_terminal, {
-  desc = 'Open Julia in a vertical split terminal with tmux'
-})
+-- map('n', '<leader>J', open_julia_terminal, {
+--   desc = 'Open Julia in a vertical split terminal with tmux'
+-- })
 
 
 -- Send motion (paragraph) to Slime, and move the cursor to the end of the paragraph

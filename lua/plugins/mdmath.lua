@@ -7,7 +7,7 @@
     -- Hide the text when in the Insert Mode.
              hide_on_insert = true,
              internal_scale = 1.0,
-             dynamic_scale = 0.4,
+             dynamic_scale = 1.0,
              anticonceal = true,
 
     }

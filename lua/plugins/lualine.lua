@@ -49,7 +49,7 @@ local function get_nvim_stats()
     -- Include buffer count from the dedicated function
     local buf_count = get_buffer_count()
 
-    return string.format("%s %s 󰓾 %d 󰻠 %.1fMB", "", buf_count, pid, rss_mb)
+    return string.format("%s %s 󰓾 %d 󰻠 %.1fMB", buf_count, "", pid, rss_mb)
 end
 
 

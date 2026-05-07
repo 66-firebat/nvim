@@ -137,9 +137,9 @@ return {
       }
       local my_custom_theme = {
         normal = {
-          a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#2b2b2b', bg = '#ff4400' },
-          c = { fg = '#903716', bg = '#2b2b2b' },
+          a = { fg = '#2b2b2b', bg = '#ff5500', gui = 'bold' },
+          b = { fg = '#2b2b2b', bg = '#ff5500' },
+          c = { fg = '#903f16', bg = '#2b2b2b' },
         },
         insert = {
           a = { fg = '#2c2c2c', bg = '#ff5500', gui = 'bold' },
@@ -164,8 +164,8 @@ return {
       },
       inactive = {
         a = { fg = '#ff5500', bg = '#903f16', gui = 'bold' },
-        b = { fg = '#903716', bg = '#2b2b2b' },
-        c = { fg = '#2b2b2b', bg = '#903716' },
+        b = { fg = '#903f16', bg = '#2b2b2b' },
+        c = { fg = '#2b2b2b', bg = '#903f16' },
       },
     }
 
@@ -201,7 +201,7 @@ return {
       tabline = {
         lualine_a = {
           { get_nvim_stats,
-            color = { fg = '#2b2b2b', bg = '#903716', gui='bold' },
+            color = { fg = '#2b2b2b', bg = '#903f16', gui='bold' },
             separator = { left = '', right = '' },
           },
         },

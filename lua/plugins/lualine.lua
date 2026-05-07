@@ -201,7 +201,7 @@ return {
       tabline = {
         lualine_a = {
           { get_nvim_stats,
-            color = { fg = '#ff5500', bg = '#903f16', gui='bold' },
+            color = { fg = '#2b2b2b', bg = '#903f16', gui='bold' },
             separator = { left = '', right = '' },
           },
         },

@@ -234,7 +234,7 @@ return {
         lualine_c = {},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
-        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress', { 'buffers', mode = 4, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, separator = { left = '', right = '' },}, get_buffer_count },
+        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress', { 'buffers', mode = 4, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, separator = { left = '', right = '' },}, get_buffer_count },
       },
       inactive_sections = {
         lualine_a = {},

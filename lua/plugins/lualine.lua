@@ -246,7 +246,7 @@ return {
       },
       tabline = {
         lualine_a = {
-          get_buffer_count,
+          {get_buffer_count, color = { fg = '#ff4400', bg = '#101010', gui='bold' }, },
           { get_nvim_stats,
             color = { fg = '#101010', bg = '#903f16', gui='bold' },
             separator = { left = '', right = '' },

@@ -187,7 +187,7 @@ return {
           z = { fg = '#101010', bg = '#ff4400', gui = 'bold' },
         },
         insert = {
-          a = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
+          a = { fg = '#101010', bg = '#ff4400', gui = 'bold' },
           b = { fg = '#101010', bg = '#903f16' },
           c = { fg = '#ff4400', bg = '#101010' },
           -- x = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
@@ -228,7 +228,7 @@ return {
         always_divide_middle = true,
       },
       sections = {
-        lualine_a = {mode, get_git_branch, 'searchcount', 'location',  diagnostics},
+        lualine_a = {mode, get_git_branch, 'location',  diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {},
         lualine_c = {diff},
@@ -246,11 +246,11 @@ return {
       },
       tabline = {
         lualine_a = {
+          get_buffer_count,
           { get_nvim_stats,
             color = { fg = '#101010', bg = '#903f16', gui='bold' },
             separator = { left = '', right = '' },
           },
-          get_buffer_count,
         },
         lualine_b = {'searchcount'},
         lualine_c = {

@@ -79,7 +79,7 @@ function Get_buffer_stats()
   local total_pages = get_process_tree_rss(root_pid)
   local total_mb = (total_pages * 4096) / 1024 / 1024
 
-  return string.format("󰓾 %-5d | %.1f MB", root_pid, total_mb)
+  return string.format("󰓾 %-5d:%.1f MB", root_pid, total_mb)
 end
 
 local function get_nvim_stats()
@@ -251,9 +251,7 @@ return {
             separator = { left = '', right = '' },
           },
         },
-        lualine_b = {
-          Get_buffer_stats,
-        },
+        lualine_b = {'searchcount'},
         lualine_c = {
           {
             'filetype',

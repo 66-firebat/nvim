@@ -231,7 +231,8 @@ return {
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {
           diff,
-          {'location', cond = hide_in_width}, 'progress' },
+          {'location', cond = hide_in_width},
+          'progress',
         },
         lualine_c = {},
         lualine_x = {function() return require("screenkey").get_keys() end },

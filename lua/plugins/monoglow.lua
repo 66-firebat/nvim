@@ -4,9 +4,9 @@ return {
   priority = 1000,
   opts = {
 
-    -- on_colors = function(colors)
-    --   colors.glow = "#ff6000"
-    -- end
+    on_colors = function(colors)
+      colors.glow = "#ff4400"
+    end
 
   },
 }

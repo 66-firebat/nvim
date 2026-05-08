@@ -1,7 +1,7 @@
 local function statusBorderBump()
   local cursorline = vim.fn.line(".")
   if vim.v.lnum == cursorline then
-    return "%#StatusColumnBorder#┣ "
+    return "%#StatusColumnBorderBump#┣ "
   else
     return "%#StatusColumnBorder#┃ "
   end

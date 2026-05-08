@@ -184,6 +184,7 @@ return {
           a = { fg = '#2b2b2b', bg = '#ff5500', gui = 'bold' },
           b = { fg = '#2b2b2b', bg = '#ff5500' },
           c = { fg = '#903f16', bg = '#2b2b2b' },
+          z = { fg = '#903f16', bg = '#2b2b2b', gui = 'bold' },
         },
         insert = {
           a = { fg = '#2c2c2c', bg = '#ff5500', gui = 'bold' },
@@ -260,7 +261,7 @@ return {
         },
         lualine_x = {},
         lualine_y = {},
-        lualine_z = {{ 'filename', path = 1 }},
+        lualine_z = {{ 'filename', path = 2 }},
       },
       extensions = { 'oil' },
     }

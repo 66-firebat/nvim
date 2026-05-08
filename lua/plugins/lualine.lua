@@ -234,7 +234,7 @@ return {
         lualine_c = {},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
-        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress', { 'buffers', mode = 4, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, separator = { left = '', right = '' },}, get_buffer_count },
+        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress', { 'buffers', mode = 4, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, } },
       },
       inactive_sections = {
         lualine_a = {},
@@ -250,6 +250,7 @@ return {
             color = { fg = '#2b2b2b', bg = '#903f16', gui='bold' },
             separator = { left = '', right = '' },
           },
+          get_buffer_count,
         },
         lualine_b = {'searchcount'},
         lualine_c = {

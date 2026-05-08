@@ -245,7 +245,7 @@ return {
               alternate_file = '󱇴 ', -- Text to show to identify the alternate file
             },
           },
-      },
+        },
       inactive_sections = {
         lualine_a = {},
         lualine_b = {},

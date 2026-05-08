@@ -2,7 +2,7 @@
 vim.cmd.colorscheme("monoglow")
 
 -- vim.api.nvim_set_hl(0, 'LineNr', { fg = '#101010', bg = 'none', blend = 0 })
-vim.api.nvim_set_hl(0, 'StatusCol', { fg = '#ff4400', bg = '#2b2b2b', blend = 0 })
+-- vim.api.nvim_set_hl(0, 'StatusCol', { fg = '#ff4400', bg = '#2b2b2b', blend = 0 })
 vim.api.nvim_set_hl(0, 'Normal', { fg = '#c0c0c1', bg = '#2b2b2b' })
 vim.api.nvim_set_hl(0, 'CursorLine', { fg = 'none', bg = 'none', blend = 5 })
 -- -- vim.api.nvim_set_hl(0, 'CursorLine', { fg = 'none', bg = 'none'})

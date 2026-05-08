@@ -12,7 +12,7 @@ local function get_file_size()
     return '0B'
   end
 
-  return ': ' .. size .. 'B'
+  return size .. 'B'
 end
 
 -- A Lua function to fetch the number of buffers currently open in the nvim instance.
@@ -91,9 +91,9 @@ local function get_nvim_stats()
     local rss_mb = rss_bytes / 1024 / 1024
 
     -- Include buffer count from the dedicated function
-    local buf_count = get_buffer_count()
+    local buf_stats = Get_buffer_stats()
 
-    return string.format(" %5d  %.1fMB %s %s", pid, rss_mb, "", buf_count)
+    return string.format(" %5d:%.1fMB %s %s", pid, rss_mb, "", buf_stats)
 end
 
 
@@ -231,7 +231,7 @@ return {
         lualine_a = {mode, get_git_branch, diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {diff},
-        lualine_c = { { 'filename', path = 2 } },
+        lualine_c = {},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
         lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress', { 'buffers', mode = 4, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, }, get_buffer_count },

@@ -246,19 +246,18 @@ return {
       },
       tabline = {
         lualine_a = {
-          {get_buffer_count, color = { fg = '#ff4400', bg = '#444444', gui='bold' }, },
+          {
+            'filetype',
+            icon_only = true,
+          },
+          {get_buffer_count, color = { fg = '#ff4400', bg = '#101010', gui='bold' }, },
           { get_nvim_stats,
-            color = { fg = '#ff4400', bg = '#444444', gui='bold' },
+            color = { fg = '#ff4400', bg = '#101010', gui='bold' },
             separator = { left = '', right = '' },
           },
         },
         lualine_b = {'searchcount'},
-        lualine_c = {
-          {
-            'filetype',
-            icon_only = true,
-          }
-        },
+        lualine_c = {},
         lualine_x = {},
         lualine_y = {},
         lualine_z = {{ 'filename', path = 2, color = { fg = '#903f16', bg = '#101010' } }},

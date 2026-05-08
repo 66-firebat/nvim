@@ -184,7 +184,7 @@ return {
           a = { fg = '#2b2b2b', bg = '#ff5500', gui = 'bold' },
           b = { fg = '#2b2b2b', bg = '#ff5500' },
           c = { fg = '#903f16', bg = '#2b2b2b' },
-          z = { fg = '#903f16', bg = '#2b2b2b', gui = 'bold' },
+          z = { fg = '#2b2b2b', bg = '#ff5500', gui = 'bold' },
         },
         insert = {
           a = { fg = '#2c2c2c', bg = '#ff5500', gui = 'bold' },
@@ -211,6 +211,7 @@ return {
         a = { fg = '#ff5500', bg = '#903f16', gui = 'bold' },
         b = { fg = '#903f16', bg = '#2b2b2b' },
         c = { fg = '#903f16', bg = '#2b2b2b' },
+        z = { fg = '#903f16', bg = '#2b2b2b', gui = 'bold' },
       },
     }
 
@@ -233,7 +234,7 @@ return {
         lualine_c = { { 'filename', path = 2 } },
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
-        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress', { 'buffers', mode = 4, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, }, },
+        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress', { 'buffers', mode = 4, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, }, get_buffer_count },
       },
       inactive_sections = {
         lualine_a = {},

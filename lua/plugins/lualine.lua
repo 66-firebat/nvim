@@ -283,6 +283,7 @@ return {
       },
       extensions = { 'oil' },
     }
+  }
   end,
 }
 

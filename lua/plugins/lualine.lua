@@ -231,7 +231,7 @@ return {
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {
           diff,
-          {'location', cond = hide_in_width},
+          'location',
           'progress',
         },
         lualine_c = {},

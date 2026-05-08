@@ -181,37 +181,37 @@ return {
       }
       local my_custom_theme = {
         normal = {
-          a = { fg = '#101010', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#101010', bg = '#ff4400' },
-          c = { fg = '#903f16', bg = '#101010' },
-          z = { fg = '#101010', bg = '#ff4400', gui = 'bold' },
+          a = { fg = '#121212', bg = '#ff4400', gui = 'bold' },
+          b = { fg = '#121212', bg = '#ff4400' },
+          c = { fg = '#903f16', bg = '#121212' },
+          z = { fg = '#121212', bg = '#ff4400', gui = 'bold' },
         },
         insert = {
-          a = { fg = '#101010', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#101010', bg = '#903f16' },
-          c = { fg = '#ff4400', bg = '#101010' },
+          a = { fg = '#121212', bg = '#ff4400', gui = 'bold' },
+          b = { fg = '#121212', bg = '#903f16' },
+          c = { fg = '#ff4400', bg = '#121212' },
           -- x = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
           -- y = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
           -- z = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
         },
         visual = {
           a = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#101010', bg = '#903f16' },
-          c = { fg = '#ff4400', bg = '#101010' },
+          b = { fg = '#121212', bg = '#903f16' },
+          c = { fg = '#ff4400', bg = '#121212' },
         -- x = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
         -- y = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
         -- z = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
       },
       replace = {
         a = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
-        b = { fg = '#101010', bg = '#903f16' },
+        b = { fg = '#121212', bg = '#903f16' },
         c = { fg = '#ff4400', bg = 'none' },
       },
       inactive = {
         a = { fg = '#ff4400', bg = '#903f16', gui = 'bold' },
-        b = { fg = '#903f16', bg = '#101010' },
-        c = { fg = '#903f16', bg = '#101010' },
-        z = { fg = '#903f16', bg = '#101010', gui = 'bold' },
+        b = { fg = '#903f16', bg = '#121212' },
+        c = { fg = '#903f16', bg = '#121212' },
+        z = { fg = '#903f16', bg = '#121212', gui = 'bold' },
       },
     }
 
@@ -249,10 +249,11 @@ return {
           {
             'filetype',
             icon_only = true,
+            separator = { left = '', right = '' },
           },
-          {get_buffer_count, color = { fg = '#ff4400', bg = '#101010', gui='bold' }, },
+          {get_buffer_count, color = { fg = '#ff4400', bg = '#121212', gui='bold' }, },
           { get_nvim_stats,
-            color = { fg = '#ff4400', bg = '#101010', gui='bold' },
+            color = { fg = '#ff4400', bg = '#121212', gui='bold' },
             separator = { left = '', right = '' },
           },
         },
@@ -260,7 +261,7 @@ return {
         lualine_c = {},
         lualine_x = {},
         lualine_y = {},
-        lualine_z = {{ 'filename', path = 2, color = { fg = '#903f16', bg = '#101010' } }},
+        lualine_z = {{ 'filename', path = 2, color = { fg = '#903f16', bg = '#121212' } }},
       },
       extensions = { 'oil' },
     }

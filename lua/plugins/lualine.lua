@@ -260,16 +260,7 @@ return {
         },
         lualine_x = {},
         lualine_y = {},
-        lualine_z = {
-          {
-            'buffers',
-            mode = 4,
-            symbols = {
-              modified = ' 󱍸',      -- Text to show when the buffer is modified
-              alternate_file = '󱇴 ', -- Text to show to identify the alternate file
-            },
-          },
-        }
+        lualine_z = {},
       },
       extensions = { 'oil' },
     }

@@ -260,7 +260,7 @@ return {
         },
         lualine_x = {},
         lualine_y = {},
-        lualine_z = {},
+        lualine_z = {{ 'filename', path = 1 }},
       },
       extensions = { 'oil' },
     }

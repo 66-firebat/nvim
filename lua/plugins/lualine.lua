@@ -228,10 +228,10 @@ return {
         always_divide_middle = true,
       },
       sections = {
-        lualine_a = {mode, get_git_branch, diagnostics},
+        lualine_a = {mode, get_git_branch, 'searchcount', 'location',  diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
-        lualine_b = {diff},
-        lualine_c = {},
+        lualine_b = {},
+        lualine_c = {diff},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
         lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress', { 'buffers', mode = 4, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, } },

@@ -232,7 +232,7 @@ return {
         lualine_c = { { 'filename', path = 2 } },
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
-        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress' },
+        lualine_z = {'searchcount', {'location', cond = hide_in_width}, 'progress', { 'buffers', mode = 4, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, }, },
       },
       inactive_sections = {
         lualine_a = {},

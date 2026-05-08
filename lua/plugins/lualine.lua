@@ -262,7 +262,7 @@ return {
         },
         lualine_x = {},
         lualine_y = {},
-        lualine_z = {{ 'filename', path = 2 }},
+        lualine_z = {{ 'filename', path = 2, color = { fg = '#903f16', bg = '#2b2b2b' } }},
       },
       extensions = { 'oil' },
     }

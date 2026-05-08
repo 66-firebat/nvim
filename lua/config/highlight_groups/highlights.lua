@@ -90,6 +90,6 @@ vim.api.nvim_set_hl(0, 'StatusColumnBorderBump', { fg = '#ff4400', bg = '#2b2b2b
 -- vim.api.nvim_set_hl(0, "MarkSignNumHL", { fg = "#ff5500" , bg = '#903f16'})
 -- vim.api.nvim_set_hl(0, "MarkSignHL", { fg = "#ff5500" , bg = '#903f16'})
 -- vim.api.nvim_set_hl(0, "StatusColumnPlugin", { fg = "#101010" , bg = '#903f16'})
--- vim.api.nvim_set_hl(0, 'StatusMark', { fg = '#ff5500', bg = '#903f16', blend = 0 })
+vim.api.nvim_set_hl(0, 'StatusMark', { fg = '#ff3300', bg = '#2b2b2b', blend = 0 })
 -- vim.api.nvim_set_hl(0, 'NoColor', { fg = 'none', bg = 'none', blend = 0 })
 -- vim.api.nvim_set_hl(0, 'WhichKeyDesc', { fg = '#ff5500', bg = 'none', blend = 0 })

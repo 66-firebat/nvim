@@ -10,11 +10,14 @@ vim.api.nvim_set_hl(0, 'CursorLineNr', { fg = '#ff4400', bg = 'none' })
 vim.api.nvim_set_hl(0, 'Visual', { fg = '#ff4400', bg = '#2b2b2b' })
 -- Changes the color of the snacks picker body (not the header/search input box)
 vim.api.nvim_set_hl(0, 'SnacksPicker', { bg = 'none', fg = 'none' })
--- Changes the color of
+-- Changes the color of the Snacks picker prompt (search field)
 vim.api.nvim_set_hl(0, 'SnacksPickerPrompt', { fg = '#ff4400', bg = 'none' })
+-- Changes the color of the Snacks input border
+vim.api.nvim_set_hl(0, 'SnacksPickerInputBorder', { fg = '#ff4400', bg = 'none' })
+-- Changes the color of the Snacks picker title
 vim.api.nvim_set_hl(0, 'SnacksPickerTitle', { fg = '#ff4400', bg = 'none' })
-vim.api.nvim_set_hl(0, 'SnacksPickerBoxBorder', { fg = '#ff4400', bg = 'none' })
--- -- vim.api.nvim_set_hl(0, 'MiniStatusLineModeNormal', { fg = '#ff5500', bg = '#903f16' })
+-- vim.api.nvim_set_hl(0, 'SnacksPickerBoxBorder', { fg = '#ff4400', bg = 'none' })
+-- -- vim.api.nvim_set_hl(0, 'MiniStatusLineModeNormal', { fg = '#ff5500', bg 6' })
 -- vim.api.nvim_set_hl(0, 'NoiceCmdLinePopupBorder', { fg = '#ff5500', bg = 'none' })
 -- vim.api.nvim_set_hl(0, 'SnacksPickerListCursorLine', { fg = '#ff5500', bg = '#903f16' })
 -- vim.api.nvim_set_hl(0, 'WhichKey', { fg = '#ff5500', bg = 'none' })

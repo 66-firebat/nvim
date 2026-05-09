@@ -66,7 +66,7 @@ vim.api.nvim_set_hl(0, 'StatusColumnBorderBump', { fg = '#ff4400', bg = '#2b2b2b
 -- vim.api.nvim_set_hl(0, 'BorderShadow2', { fg = '#ff5500', bg = '#3b2f28' })
 -- vim.api.nvim_set_hl(0, 'BorderShadow1', { fg = '#ff5500', bg = '#362e29' })
 -- vim.api.nvim_set_hl(0, 'BorderShadow0', { fg = '#ff5500', bg = 'none' })
--- vim.api.nvim_set_hl(0, 'SnacksPicker', { bg = 'none', fg = 'none' })
+vim.api.nvim_set_hl(0, 'SnacksPicker', { bg = 'none', fg = 'none' })
 -- vim.api.nvim_set_hl(0, 'MonoGlow', { fg = '#1bfd9c', bg = '#903f16' })
 -- vim.api.nvim_set_hl(0, 'MonoGlowStatusColumnBorder', { fg = '#101010', bg = '#903f16' })
 -- vim.api.nvim_set_hl(0, 'GitSignsAdd', { fg = '#101010', bg = '#903f16' })

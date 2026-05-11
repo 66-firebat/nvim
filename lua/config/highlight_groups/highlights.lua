@@ -36,6 +36,12 @@ vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = "#ff4400" , bg = 'no
 vim.api.nvim_set_hl(0, "DiagnosticVirtualTextWarn", { fg = "#ff4400" , bg = 'none'})
 -- Indent color
 vim.api.nvim_set_hl(0, 'IblScope', { fg = '#ff4400', bg = 'none' })
+-- Set the color for the "showbreak" indicator (NonText)
+vim.api.nvim_set_hl(0, "NonText", { fg = "#ff4400" })
+
+-- -- If you use listchars to show indentation guides, set this too
+-- vim.api.nvim_set_hl(0, "Whitespace", { fg = "#3a3a3a" })
+
 -- vim.api.nvim_set_hl(0, 'SnacksPickerBoxBorder', { fg = '#ff4400', bg = 'none' })
 -- -- vim.api.nvim_set_hl(0, 'MiniStatusLineModeNormal', { fg = '#ff5500', bg 6' })
 -- vim.api.nvim_set_hl(0, 'NoiceCmdLinePopupBorder', { fg = '#ff5500', bg = 'none' })

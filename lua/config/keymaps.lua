@@ -201,19 +201,16 @@ end, { noremap = true, silent = true, desc = "Exact word search (prompt)" })
 --   vim.cmd('.-1put')
 -- end, { desc = 'put' })
 
--- required function for opening directories in terminal from oil
-local function save_cwd_to_file()
-  local cwd = require("oil").get_current_dir()
-  local file = io.open(os.getenv("TMPDIR") .. "/.nvim_last_dir", "w")
-  if file then
-    file:write(cwd)
-    file:close()
+-- Open a terminal from the current Oil directory (oil buffer only)
+map('n', '<leader>cd', function()
+  local dir = require("oil").get_current_dir()
+  if dir then
+    local cmd = string.format('cd %s && exec $SHELL', vim.fn.shellescape(dir))
+    vim.cmd('terminal ' .. cmd)
+  else
+    print("Not in an Oil buffer")
   end
-  vim.cmd("qa")
-end
-
--- Open directory in terminal from oil buffer
-map('n', '<leader>cd', save_cwd_to_file, { desc = '[oil]: open directory' })
+end, { desc = '[oil]: open terminal in current directory' })
 
 -- Delete word using CTRL+BKSPC
 map('n', '<C-BS>', 'diw', { noremap = true, silent = true })

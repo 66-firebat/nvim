@@ -59,3 +59,22 @@ dv2b
 - <leader>sw will search for all instances of the word under the cursor</leader>, in VISUAL mode
 
 - Setting a config function in lazy.nvim lua files will disable the opts table from registering it's values. Additionally, the setup require function should only be called once in order to avoid overwriting the M table with blank values
+
+
+- oil buffer write function:
+
+```
+-- required function for opening directories in terminal from oil
+local function save_cwd_to_file()
+	local cwd = require("oil").get_current_dir()
+	local file = io.open(os.getenv("TMPDIR") .. "/.nvim_last_dir", "w")
+	if file then
+		file:write(cwd)
+		file:close()
+	end
+	vim.cmd("qa")
+end
+
+-- Open directory in terminal from oil buffer
+map('n', '<leader>cd', save_cwd_to_file, { desc = '[oil]: open directory' })
+```

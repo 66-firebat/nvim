@@ -9,7 +9,8 @@ return {
       show_start = false,
       show_end = false,
       show_exact_scope = true,
-      highlight = {"IndentColor"},
+      -- Using iblscope in the highlights.lua file
+      -- highlight = {"Comment"},
       char = "󰇙"
     },
     indent = {

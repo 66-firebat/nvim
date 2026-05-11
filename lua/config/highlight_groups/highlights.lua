@@ -35,7 +35,7 @@ vim.api.nvim_set_hl(0, "DiagnosticVirtualTextOk", { fg = "#ff4400" , bg = 'none'
 vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = "#ff4400" , bg = 'none'})
 vim.api.nvim_set_hl(0, "DiagnosticVirtualTextWarn", { fg = "#ff4400" , bg = 'none'})
 -- Indent color
-vim.api.nvim_set_hl(0, "IndentColor", { fg = "#ff4400" , bg = 'none'})
+vim.api.nvim_set_hl(0, 'IblScope', { fg = '#ff4400', bg = 'none' })
 -- vim.api.nvim_set_hl(0, 'SnacksPickerBoxBorder', { fg = '#ff4400', bg = 'none' })
 -- -- vim.api.nvim_set_hl(0, 'MiniStatusLineModeNormal', { fg = '#ff5500', bg 6' })
 -- vim.api.nvim_set_hl(0, 'NoiceCmdLinePopupBorder', { fg = '#ff5500', bg = 'none' })

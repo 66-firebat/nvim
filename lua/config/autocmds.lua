@@ -390,6 +390,8 @@ vim.api.nvim_create_autocmd("TermOpen", {
     -- Force the statuscolumn to be inherited/set
     -- (Usually inherited globally, but TermOpen sometimes clears it)
     vim.opt_local.statuscolumn = vim.opt.statuscolumn:get()
+    -- Enter into insert mode (prevents having to constantly enter Terminaol mode on buffer change)
+    vim.cmd("startinsert")
   end,
 })
 
@@ -477,14 +479,14 @@ vim.api.nvim_create_autocmd("FileType", {
 --
 -- vim.notify("Quickfix suppression autocommand is active.", vim.log.levels.INFO)
 
-local function save_cwd_to_file()
+--[[ local function save_cwd_to_file()
   local cwd = require("oil").get_current_dir()
   local file = io.open(os.getenv("TMPDIR") .. "/.nvim_last_dir", "w")
   if file then
     file:write(cwd)
     file:close()
   end
-end
+end ]]
 
 -- vim.api.nvim_create_autocmd({ "VimLeavePre", "DirChanged" }, {
 --   callback = save_cwd_to_file,

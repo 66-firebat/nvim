@@ -11,11 +11,11 @@ return {
       show_exact_scope = true,
       -- Using iblscope in the highlights.lua file
       -- highlight = {"Comment"},
-      char = "󰇙"
+      char = ""
     },
     indent = {
       -- Set the character to a vertical bar (or any character you prefer)
-      char = "󰇙",
+      char = "",
     },
   },
 }

@@ -97,9 +97,6 @@ local function get_nvim_stats()
 end
 
 
-
-
-
 -- A Lua function to fetch the current Git branch name of the repository
 -- containing the current buffer's file.
 local function get_git_branch()

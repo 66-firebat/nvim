@@ -262,14 +262,14 @@ vim.api.nvim_create_autocmd("BufEnter", {
 
 
 
--- Automatically enter insert mode in terminal buffers (used primarily for entering broot commands)
+--[[ -- Automatically enter insert mode in terminal buffers (used primarily for entering broot commands)
 vim.api.nvim_create_autocmd("TermOpen", {
   pattern = "*",
   callback = function()
     vim.cmd("startinsert")
     vim.bo.filetype = "bash"
   end,
-})
+}) ]]
 
 -- Automatically close terminal buffers when the job exits, which prevents you from having to manually close them by pressing any key
 vim.api.nvim_create_autocmd("BufLeave", {
@@ -380,13 +380,13 @@ vim.api.nvim_create_autocmd("TermOpen", {
 vim.api.nvim_create_autocmd("TermOpen", {
   group = vim.api.nvim_create_augroup("terminal-style-sync", { clear = true }),
   callback = function()
+    -- set filetype to bash for useful highlight utilities
+    vim.bo.filetype = "bash"
     -- Enable numbers so the statuscol has a "canvas" to draw on
     vim.opt_local.number = true
     vim.opt_local.relativenumber = true
-    
     -- Ensure the signcolumn doesn't collapse
     vim.opt_local.signcolumn = "yes"
-    
     -- Force the statuscolumn to be inherited/set
     -- (Usually inherited globally, but TermOpen sometimes clears it)
     vim.opt_local.statuscolumn = vim.opt.statuscolumn:get()

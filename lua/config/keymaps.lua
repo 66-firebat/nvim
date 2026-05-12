@@ -387,3 +387,17 @@ vim.keymap.set("n", "z=", function()
     }
   })
 end, { desc = "Spelling Suggestions with File Preview" })
+
+-- Function to remove all buffers, except the current one, from the buffer list
+local function close_other_buffers()
+    local current_buf = vim.api.nvim_get_current_buf()
+    local buffers = vim.api.nvim_list_bufs()
+
+    for _, buf in ipairs(buffers) do
+        if buf ~= current_buf and vim.api.nvim_buf_is_loaded(buf) then
+            vim.api.nvim_buf_delete(buf, { force = false })
+        end
+    end
+end
+
+vim.keymap.set('n', '<leader>bo', close_other_buffers, { desc = 'Close all other buffers' })

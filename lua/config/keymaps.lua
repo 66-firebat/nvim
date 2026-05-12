@@ -371,4 +371,19 @@ end, {
 vim.keymap.set('n', '<leader><Tab>', '<C-^>', { desc = "Switch to alternate buffer" })
 
 -- Snacks picker spell checker
-vim.keymap.set("n", "z=", function() Snacks.picker.spelling() end, { desc = "Spelling Suggestions (Snacks)" })
+vim.keymap.set("n", "z=", function()
+  local current_file = vim.api.nvim_buf_get_name(0)
+  
+  Snacks.picker.spelling({
+    ---@param item snacks.Picker.Item
+    transform = function(item)
+      item.file = current_file
+      return item
+    end,
+    -- Now that 'file' exists, you can use any previewer you like
+    preview = "file",
+    layout = {
+      preset = "vertical",
+    }
+  })
+end, { desc = "Spelling Suggestions with File Preview" })

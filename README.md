@@ -78,3 +78,6 @@ end
 -- Open directory in terminal from oil buffer
 map('n', '<leader>cd', save_cwd_to_file, { desc = '[oil]: open directory' })
 ```
+
+- Spelling
+	- Disctionary is located @ ~/.local/share/nvim/site/spell/en.utf-8.add

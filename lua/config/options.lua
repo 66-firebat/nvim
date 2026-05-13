@@ -16,6 +16,8 @@ vim.lsp.enable("basedpyright")
 require("config.lsp.julials")
 
 -- vim.g.vimtex_compiler_method = "lualatex"
+-- sets scrollback memory to 9999 lines. Exceeding lines will cause earliest lines to be removed from buffer memory. Use :set scrollback=<value> to manually designate scrollback memory.
+vim.o.scrollback = 9999
 vim.g.mapleader = " "					-- change leader to a space
 vim.g.maplocalleader = " "				-- change localleader to a space
 vim.g.loaded_netrw = 1					-- disable netrw

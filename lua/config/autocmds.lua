@@ -380,8 +380,8 @@ vim.api.nvim_create_autocmd("TermOpen", {
 vim.api.nvim_create_autocmd("TermOpen", {
   group = vim.api.nvim_create_augroup("terminal-style-sync", { clear = true }),
   callback = function()
-    -- set filetype to bash for useful highlight utilities
-    vim.bo.filetype = "bash"
+    -- set filetype to markdown for useful highlight utilities, primarily useful for the pi coding agent
+    vim.bo.filetype = "markdown"
     -- Enable numbers so the statuscol has a "canvas" to draw on
     vim.opt_local.number = true
     vim.opt_local.relativenumber = true

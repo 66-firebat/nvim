@@ -380,7 +380,7 @@ vim.api.nvim_create_autocmd("TermOpen", {
 vim.api.nvim_create_autocmd("TermOpen", {
   group = vim.api.nvim_create_augroup("terminal-style-sync", { clear = true }),
   callback = function()
-    -- set filetype to text, even that markdown has more useful highlight utilities, primarily useful for the pi coding agent. This is because it apepars that the markdown fileytpe incurs a performance cost when parsing a large buffer as a markdwon file
+    -- set filetype to text, even though markdown has more useful highlight utilities, primarily useful for the pi coding agent. This is because it appears that the markdown fileytpe incurs a performance cost when parsing a large buffer as a markdown file
     vim.bo.filetype = "text"
     -- Enable numbers so the statuscol has a "canvas" to draw on
     vim.opt_local.number = true

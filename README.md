@@ -1,7 +1,6 @@
 # Todo
 - Redesign Oil bash relocation script to allow for ability to <leader>cd into a terminal buffer at the site of the current directory location 
-- Design a terminal opening keymap (instead of basic <leader>tt), to open a terminal buffer at the current file location
-- Set filetype to "bash" whenever a user enters the terminal buffer
+- Test out terminal cycling keys. It may be pragmatic to set up one-shot keys to cycle terminals 
 
 # Notes
 - Resetting Neovim

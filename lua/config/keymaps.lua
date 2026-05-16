@@ -37,12 +37,6 @@ map("n", "YY", "va{Vy", opts)
 map({ "n", "x", "o" }, "H", "^", opts)
 map({ "n", "x", "o" }, "L", "g_", opts)
 
--- Navigate buffers and center cursor
--- Add 'nowait' so it fires immediately even if other maps exist
--- map("n", "<leader>j", ":bnext<CR>zz", { noremap = true, silent = true, nowait = true })
-map("n", "<C-l>", "<Cmd>bnext | normal! zz<CR>", opts)
-map("n", "<C-h>", ":bprevious<CR>zz", opts)
-
 -- Panes resizing
 map("n", "+", ":vertical resize +5<CR>")
 map("n", "_", ":vertical resize -5<CR>")
@@ -350,9 +344,13 @@ vim.keymap.set("n", "<M-f>", function()
   })
 end)
 
--- Exits out of terminal mode into terminal normal mode. Maps to h and l keys for double tab cycling
-vim.keymap.set('t', '<C-h>', [[<C-\><C-n>]], { desc = "Exit terminal mode" })
-vim.keymap.set('t', '<C-l>', [[<C-\><C-n>]], { desc = "Exit terminal mode" })
+-- Exit terminal mode and go to the next buffer
+vim.keymap.set('t', '<C-h>', [[<Cmd>bnext<CR>]], { desc = "Terminal next buffer" })
+vim.keymap.set('t', '<C-l>', [[<Cmd>bnext<CR>]], { desc = "Terminal next buffer" })
+
+-- Navigate buffers without centering the cursor
+vim.keymap.set('n', '<C-l>', [[<Cmd>bnext<CR>]], opts)
+vim.keymap.set('n', '<C-h>', [[<Cmd>bprevious<CR>]], opts)
 
 -- Opens a vsplit terminal
 map('n', '<leader>tT', function()

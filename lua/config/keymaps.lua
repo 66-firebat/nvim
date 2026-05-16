@@ -345,8 +345,9 @@ vim.keymap.set("n", "<M-f>", function()
 end)
 
 -- Exit terminal mode and go to the next buffer
-vim.keymap.set('t', '<C-h>', [[<Cmd>bnext<CR>]], { desc = "Terminal next buffer" })
+vim.keymap.set('t', '<C-h>', [[<Cmd>bprevious<CR>]], { desc = "Terminal previous buffer" })
 vim.keymap.set('t', '<C-l>', [[<Cmd>bnext<CR>]], { desc = "Terminal next buffer" })
+vim.keymap.set('t', '<C-;>', [[<C-\><C-n>]], { desc = "Exit terminal mode" })
 
 -- Navigate buffers without centering the cursor
 vim.keymap.set('n', '<C-l>', [[<Cmd>bnext<CR>]], opts)

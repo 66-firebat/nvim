@@ -35,7 +35,7 @@ return {
       -- Calculate the width needed for the largest line number
       local max_line = last_line
       -- local num_width = #tostring(max_line)
-      -- Hardcoding numwidth to prevent dynamic fluctuations in the width of the statuscolumn. Comment this out if you want a more compact statuscolumn for code that doesn't have as many lines. This WILL break if you have a file that has more characters in it's maximum linue number than the number hardcoded in the num_width variable. So, for example, setting the num_wdith to 4 will break if you have a file with more than 9999 lines.
+      -- Hardcoding numwidth to prevent dynamic fluctuations in the width of the statuscolumn. Comment this out if you want a more compact statuscolumn for code that doesn't have as many lines. This WILL break if you have a file that has more lines (and thus line characters) than the maximum line characters than the number hardcoded in the num_width variable. So, for example, setting the num_wdith to 4 will break if you have a file with more than 9999 lines.
       local num_width = 4
       
       -- Create reverse mapping: line_number -> label

@@ -368,7 +368,7 @@ end, {
 })
 
 -- Switch to alternate buffer, map to <leader> + Tab
-vim.keymap.set('n', '<leader><Tab>', '<C-^>', { desc = "Switch to alternate buffer" })
+vim.keymap.set({'n', 't', 'i'}, '<C-b>', [[<Cmd>b#<CR>]], { desc = "Switch to alternate buffer" })
 
 -- Snacks picker spell checker
 vim.keymap.set("n", "z=", function()

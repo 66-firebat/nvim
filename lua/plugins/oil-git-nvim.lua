@@ -16,6 +16,8 @@ opts = {
   symbol_position = "signcolumn",  -- "eol", "signcolumn", or "none"
   can_use_signcolumn = nil,  -- Optional callback(bufnr): nil|bool|string
   ignore_gitsigns_update = false,   -- Ignore GitSignsUpdate events (fallback for flickering)
+  show_branch = true,               -- Show current Git branch in oil buffers
+  branch_format = " %s",
   debug = verbose,            -- false, "minimal", or "verbose"
 
   symbols = {

@@ -83,3 +83,6 @@ map('n', '<leader>cd', save_cwd_to_file, { desc = '[oil]: open directory' })
 
 - Folding
 - Default folding behavior is defined in the nvim-treesitter plugin
+
+- oil-git.nvim
+	- In order to access the git branch feature, the feat/show-current-branch must be checked out https://github.com/malewicz1337/oil-git.nvim/issues/9#issuecomment-4506670468

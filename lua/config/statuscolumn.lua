@@ -165,9 +165,7 @@ end
 -- =============================================================================
 
 --- Return a map { [lnum] = "<markchar>" } for marks a-zA-Z on their lines.
---- When multiple marks share a line, the MOST RECENTLY-SET mark wins.
---- This mirrors Emacs `sc--build-mark-map` exactly: non-recent marks go in
---- first (a..zA..Z order), then recent marks override (only if not claimed).
+--- The LAST mark placed wins; tracked by M._last_mark (synchronous, per-buffer).
 function M.build_mark_map()
   local map = {}
   local cur_buf = vim.api.nvim_get_current_buf()
@@ -175,48 +173,49 @@ function M.build_mark_map()
   local function put(ch)
     local pos = vim.fn.getpos("'" .. ch)
     local lnum = pos and pos[2] or 0
-    -- Filter by buffer: local marks (a-z) are already scoped to the current
-    -- buffer, but global marks (A-Z) return the mark's OWN buffer in pos[1].
-    -- Ignore any mark whose buffer is not the current one, so a global mark
-    -- set in file1 does not bleed into file2.
     local mark_buf = pos and pos[1] or 0
+    -- Cross-buffer guard: global marks carry their own bufnr, so only include
+    -- the mark if it belongs to the current buffer (local marks have bufnr 0).
     if lnum and lnum > 0 and (mark_buf == 0 or mark_buf == cur_buf) then
       map[lnum] = ch
     end
   end
 
-  -- Pass 1: all marks EXCEPT the tracked-recent ones, in a..zA..Z order.
-  for c = 97, 122 do
-    local ch = string.char(c)
-    if not M._is_recent(ch) then put(ch) end
-  end
-  for c = 65, 90 do
-    local ch = string.char(c)
-    if not M._is_recent(ch) then put(ch) end
-  end
+  -- Local a..z then global A..Z.
+  for c = 97, 122 do put(string.char(c)) end
+  for c = 65, 90 do put(string.char(c)) end
 
-  -- Pass 2: recent marks, MOST RECENT FIRST; a line already claimed is kept
-  -- (Emacs: `unless (gethash bol sc--mark-map)`).
-  for _, ch in ipairs(M._recent_marks) do
-    local pos = vim.fn.getpos("'" .. ch)
-    local lnum = pos and pos[2] or 0
-    local mark_buf = pos and pos[1] or 0
-    if lnum and lnum > 0 and (mark_buf == 0 or mark_buf == cur_buf) and not map[lnum] then
-      map[lnum] = ch
-    end
+  -- Recency: the single most recently set mark wins on ITS line, but only if
+  -- it was set in THIS buffer (no cross-buffer contamination).
+  if M._last_mark and M._last_buf == cur_buf then
+    map[M._last_mark_line] = M._last_mark
   end
 
   return map
 end
 
--- `_recent_marks` is a most-recent-first list of mark chars (like Emacs
--- `sc--recent-marks`).  `_is_recent` checks membership.
-M._recent_marks = {}
-function M._is_recent(ch)
-  for _, r in ipairs(M._recent_marks) do
-    if r == ch then return true end
+-- Most recently set mark: char + its line + its buffer (synchronous).
+M._last_mark = nil
+M._last_mark_line = nil
+M._last_buf = nil
+
+--- Set a mark, deleting any existing mark with the same name FIRST so there is
+--- never a stale/duplicate mark.  Records recency synchronously.
+function M.set_mark()
+  local ch = vim.fn.nr2char(vim.fn.getchar())
+  if ch == "\27" or ch == "" then
+    return
   end
-  return false
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  local buf = vim.api.nvim_get_current_buf()
+  -- Delete any existing mark with this name (global + local shada entries).
+  pcall(vim.cmd, "delmarks " .. ch)
+  -- Set the fresh mark at the cursor.
+  vim.cmd("normal! m" .. ch)
+  -- Record the most-recently set mark synchronously (buffer-scoped).
+  M._last_mark = ch
+  M._last_mark_line = row
+  M._last_buf = buf
 end
 
 -- =============================================================================
@@ -547,45 +546,6 @@ function M.setup_search_hooks()
   })
 end
 
--- =============================================================================
---  Mark-recency tracking (Emacs sc--track-recent-mark / sc--recent-marks)
--- =============================================================================
-
---- Record a mark char as "most recent" and force an immediate statuscolumn
---- redraw.  Called from the `MarkSet` autocmd below.
-function M.note_mark(ch)
-  -- Move `ch` to the front (most recent).
-  for i, existing in ipairs(M._recent_marks) do
-    if existing == ch then
-      table.remove(M._recent_marks, i)
-      break
-    end
-  end
-  table.insert(M._recent_marks, 1, ch)
-  if #M._recent_marks > 50 then
-    M._recent_marks[#M._recent_marks] = nil
-  end
-end
-
---- Record recency the instant a mark is set, and force a gutter repaint so the
---- label updates on the SAME keystroke (Emacs rebuilt on post-command-hook).
-function M.setup_mark_hooks()
-  local group = vim.api.nvim_create_augroup("StatusColumnMarks", { clear = true })
-  vim.api.nvim_create_autocmd("MarkSet", {
-    group = group,
-    callback = function(ev)
-      local name = ev and ev.data and ev.data.name
-      if not name or not name:match("^%a$") then
-        return
-      end
-      M.note_mark(name)
-      -- Repaint immediately so the new label shows on this keystroke.
-      vim.cmd("redrawstatus")
-    end,
-  })
-end
-
--- =============================================================================
 --  Setup: wire into statuscol.nvim
 -- =============================================================================
 
@@ -597,7 +557,6 @@ function M.setup(opts)
 
   ensure_highlights()
   M.setup_search_hooks()
-  M.setup_mark_hooks()
 
   statuscol.setup(vim.tbl_deep_extend("force", {
     relculright = true,

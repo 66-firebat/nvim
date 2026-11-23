@@ -20,6 +20,10 @@ local jump = require("config.jumplist")
 vim.keymap.set("n", "<C-o>", jump.backward, { desc = "Jump back (jumplist)" })
 vim.keymap.set("n", "<C-i>", jump.forward, { desc = "Jump forward (jumplist)" })
 
+-- Set a mark, cleaning up any prior mark with the same name first.
+local SC = require("config.statuscolumn")
+vim.keymap.set("n", "m", SC.set_mark, { desc = "Set mark (clean)" })
+
 -- Fast saving and quitting
 -- map("n", "<leader>w", ":write!<CR>", { silent = false, desc = "Save file" })
 -- map("n", "<leader>q", ":q!<CR>", opts)

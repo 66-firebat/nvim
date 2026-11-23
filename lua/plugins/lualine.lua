@@ -224,11 +224,9 @@ return {
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,
       },
-      -- Empty sections so lualine does NOT touch statusline (config/tabs.lua
-      -- owns statusline at the bottom).  Content lives in winbar (top) instead.
-      sections = {},
-      inactive_sections = {},
-      winbar = {
+      -- lualine renders into statusline (bottom) as before; the tabs own winbar
+      -- (top) via config/tabs.lua.
+      sections = {
         lualine_a = {'location', get_git_branch, mode, diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {},
@@ -237,7 +235,7 @@ return {
         lualine_y = {},
         lualine_z = { { 'buffers', mode = 3, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, } },
       },
-      inactive_winbar = {
+      inactive_sections = {
         lualine_a = {},
         lualine_b = {},
         lualine_c = { { 'filename', path = 1 } },

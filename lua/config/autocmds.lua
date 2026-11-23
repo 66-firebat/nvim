@@ -380,8 +380,10 @@ vim.api.nvim_create_autocmd("TermOpen", {
 vim.api.nvim_create_autocmd("TermOpen", {
   group = vim.api.nvim_create_augroup("terminal-style-sync", { clear = true }),
   callback = function()
-    -- set filetype to text, even though markdown has more useful highlight utilities, primarily useful for the pi coding agent. This is because it appears that the markdown fileytpe incurs a performance cost when parsing a large buffer as a markdown file
-    vim.bo.filetype = "text"
+    -- Set filetype to "terminal"/"broot" (not "text") so the tab-line groups
+    -- terminals correctly.  Broot terminals are detected by buffer name.
+    local name = vim.api.nvim_buf_get_name(0)
+    vim.bo.filetype = name:match("broot") and "broot" or "terminal"
     -- Enable numbers so the statuscol has a "canvas" to draw on
     vim.opt_local.number = true
     vim.opt_local.relativenumber = true

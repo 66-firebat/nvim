@@ -27,59 +27,54 @@ local M = {}
 --  Group categories (Emacs my/tab-group-categories -> nvim filetypes)
 -- =============================================================================
 
-local GROUP_ICONS = {
-  Code     = "󰣕",
-  FileMgr  = "󰏇", -- grease/oil/dirvish
-  Docs     = "",
-  Config   = "",
-  Terminal = "", -- ghostel/vterm/terminal
-  Broot    = "󰙅",
-  Tools    = "", -- magit/lazygit/diffview/help
-  Buffers  = "", -- catch-all
+-- Groups: a label mapped to the list of nvim filetypes that belong to it.
+-- The FIRST filetype in each list is the "representative" whose icon (via
+-- mini.icons) is shown as the group icon segment.
+local GROUPS = {
+  Code = {
+    "lua", "python", "go", "rust", "java", "c", "cpp", "javascript",
+    "typescript", "javascriptreact", "typescriptreact", "css", "scss", "html",
+    "json", "jsonc", "yaml", "sql", "nix", "sh", "bash", "zsh", "fish",
+    "vim", "ruby", "php", "kotlin", "swift", "haskell",
+  },
+  FileMgr = { "oil" },
+  Docs = { "markdown", "text", "org", "rst", "latex", "tex" },
+  Config = { "conf", "dotenv", "toml", "ini", "gitcommit", "gitrebase" },
+  Terminal = { "terminal" },
+  Broot = { "broot" },
+  Tools = { "help", "fugitive", "fugitiveblame", "diff", "git", "man", "qf" },
 }
 
--- Map nvim filetypes/buftypes -> group name (order = priority).
+local FALLBACK_GROUP = "Buffers"
+
+--- Classify a buffer by its FILETYPE (no buftype).  Returns the group label,
+--- or the fallback "Buffers" when the filetype is not in any group.
 local function group_for_buffer(bufnr)
   local ft = vim.bo[bufnr].filetype or ""
-  local bt = vim.bo[bufnr].buftype or ""
-  local name = vim.api.nvim_buf_get_name(bufnr) or ""
-
-  -- Exclude scratch/unlisted-style buffers (mirrors Emacs: names starting with
-  -- space, or *scratch* / *Messages*).
-  local bname = vim.api.nvim_buf_get_name(bufnr)
-  if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buflisted then
-    -- ok, listed
-  end
-
-  if bt == "terminal" then
-    -- Broot terminals are named "broot*".
-    if name:match("broot") then
-      return "Broot"
+  for label, fts in pairs(GROUPS) do
+    for _, f in ipairs(fts) do
+      if f == ft then
+        return label
+      end
     end
-    return "Terminal"
   end
-  if bt == "quickfix" then return "Tools" end
-  if ft == "oil" then return "FileMgr" end
+  return FALLBACK_GROUP
+end
 
-  local code_fts = {
-    lua=true, python=true, go=true, rust=true, java=true,
-    c=true, cpp=true, javascript=true, typescript=true, javascriptreact=true,
-    typescriptreact=true, css=true, scss=true, html=true, json=true, jsonc=true,
-    yaml=true, sql=true, nix=true, sh=true, bash=true, zsh=true, fish=true,
-    vim=true, ruby=true, php=true, kotlin=true, swift=true, haskell=true,
-  }
-  if code_fts[ft] then return "Code" end
-
-  local doc_fts = { markdown=true, text=true, org=true, rst=true, latex=true, tex=true }
-  if doc_fts[ft] then return "Docs" end
-
-  local cfg_fts = { conf=true, dotenv=true, toml=true, ini=true, gitcommit=true, gitrebase=true }
-  if cfg_fts[ft] then return "Config" end
-
-  local tool_fts = { help=true, fugitive=true, fugitiveblame=true, diff=true, git=true, man=true }
-  if tool_fts[ft] then return "Tools" end
-
-  return "Buffers"
+--- Return the icon for a GROUP label, derived from its representative filetype
+--- via mini.icons (falls back to a generic icon).
+local function group_icon(group)
+  local fts = GROUPS[group]
+  if fts and fts[1] then
+    local ok, mi = pcall(require, "mini.icons")
+    if ok and mi and mi.get then
+      local icon = mi.get("filetype", fts[1])
+      if icon and icon ~= "" then
+        return icon
+      end
+    end
+  end
+  return "" -- fallback (catch-all) icon
 end
 
 -- =============================================================================
@@ -152,7 +147,7 @@ end
 
 --- Group icon + line-number segment (Emacs my/ct--group-icon).
 local function group_icon_segment(group, lnum)
-  local icon = GROUP_ICONS[group] or GROUP_ICONS.Buffers
+  local icon = group_icon(group)
   local line_str = tostring(lnum)
   -- 6-char hyphen-padded (Emacs pads to 6 with hyphens).
   local padded = line_str
@@ -302,16 +297,16 @@ function M.setup()
       local cfg = vim.api.nvim_win_get_config(winid)
       if cfg.relative and cfg.relative ~= "" then
         -- Floating window: no winbar.
-        vim.wo[winid].statusline = ""
+        vim.wo[winid].winbar = ""
         return
       end
       local height = vim.api.nvim_win_get_height(winid)
       if height < 3 then
         -- Too small for a meaningful winbar.
-        vim.wo[winid].statusline = ""
+        vim.wo[winid].winbar = ""
         return
       end
-      vim.wo[winid].statusline = "%{%v:lua.require('config.tabs')._render()%}"
+      vim.wo[winid].winbar = "%{%v:lua.require('config.tabs')._render()%}"
     end,
   })
 
@@ -325,7 +320,7 @@ function M.setup()
 
   -- Apply to current window immediately.
   local winid = vim.api.nvim_get_current_win()
-  vim.wo[winid].statusline = "%{%v:lua.require('config.tabs')._render()%}"
+  vim.wo[winid].winbar = "%{%v:lua.require('config.tabs')._render()%}"
 
   vim.cmd("redraw")
 end

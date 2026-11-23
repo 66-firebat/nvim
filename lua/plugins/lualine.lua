@@ -224,7 +224,11 @@ return {
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,
       },
-      sections = {
+      -- Empty sections so lualine does NOT touch statusline (config/tabs.lua
+      -- owns statusline at the bottom).  Content lives in winbar (top) instead.
+      sections = {},
+      inactive_sections = {},
+      winbar = {
         lualine_a = {mode, get_git_branch, 'location',  diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {},
@@ -233,32 +237,13 @@ return {
         lualine_y = {},
         lualine_z = { { 'buffers', mode = 3, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, } },
       },
-      inactive_sections = {
+      inactive_winbar = {
         lualine_a = {},
         lualine_b = {},
         lualine_c = { { 'filename', path = 1 } },
         lualine_x = { { 'location', padding = 0 } },
         lualine_y = {},
         lualine_z = {},
-      },
-      tabline = {
-        lualine_a = {
-          {
-            'filetype',
-            icon_only = true,
-            separator = { left = '', right = '' },
-          },
-          {get_buffer_count, color = { fg = '#ff4400', bg = '#2b2b2b', gui='bold' }, },
-          { get_nvim_stats,
-            color = { fg = '#ff4400', bg = '#2b2b2b', gui='bold' },
-            separator = { left = '', right = '' },
-          },
-        },
-        lualine_b = {},
-        lualine_c = {},
-        lualine_x = {},
-        lualine_y = {},
-        lualine_z = {{ 'filename', path = 2, color = { fg = '#903f16', bg = '#2b2b2b' } }},
       },
       extensions = { 'oil' },
     }

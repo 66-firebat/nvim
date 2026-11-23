@@ -302,16 +302,16 @@ function M.setup()
       local cfg = vim.api.nvim_win_get_config(winid)
       if cfg.relative and cfg.relative ~= "" then
         -- Floating window: no winbar.
-        vim.wo[winid].winbar = ""
+        vim.wo[winid].statusline = ""
         return
       end
       local height = vim.api.nvim_win_get_height(winid)
       if height < 3 then
         -- Too small for a meaningful winbar.
-        vim.wo[winid].winbar = ""
+        vim.wo[winid].statusline = ""
         return
       end
-      vim.wo[winid].winbar = "%{%v:lua.require('config.tabs')._render()%}"
+      vim.wo[winid].statusline = "%{%v:lua.require('config.tabs')._render()%}"
     end,
   })
 
@@ -325,7 +325,7 @@ function M.setup()
 
   -- Apply to current window immediately.
   local winid = vim.api.nvim_get_current_win()
-  vim.wo[winid].winbar = "%{%v:lua.require('config.tabs')._render()%}"
+  vim.wo[winid].statusline = "%{%v:lua.require('config.tabs')._render()%}"
 
   vim.cmd("redraw")
 end

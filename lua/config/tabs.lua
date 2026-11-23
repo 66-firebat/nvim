@@ -142,13 +142,41 @@ local function highlight(group, text)
   return "%#" .. group .. "#" .. text
 end
 
---- Tab label: modified marker + powerline lead + name (Emacs my/ct--tab-label).
+--- Stable buffer identity: a clean 1..N number derived from buffer CREATION
+--- ORDER (nvim bufnr is monotonically increasing), so numbers stay stable per
+--- buffer and never re-number when others open/close.  Scratch/internal buffers
+--- still advance the bufnr counter, but we only NUMBER listed buffers, so the
+--- visible numbers are clean 1..N in creation order.
+local stable_number = {} -- bufnr -> number
+local function rebuild_stable_numbers()
+  stable_number = {}
+  -- Listed buffers, sorted by bufnr ascending (= creation order).
+  local listed = {}
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.bo[bufnr].buflisted then
+      listed[#listed + 1] = bufnr
+    end
+  end
+  table.sort(listed)
+  for i, bufnr in ipairs(listed) do
+    stable_number[bufnr] = i
+  end
+end
+local function get_stable_number(bufnr)
+  if not stable_number[bufnr] then
+    rebuild_stable_numbers()
+  end
+  return stable_number[bufnr]
+end
+
+--- Tab label: stable number + modified marker + powerline lead + name.
 local function tab_label(bufnr, selected)
   local modified = vim.bo[bufnr].modified
   local prefix = modified and "󰑧 " or ""
   local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
   if name == "" then name = vim.fn.bufname(bufnr) end
-  local label = " " .. prefix .. name
+  local num = get_stable_number(bufnr)
+  local label = " " .. num .. "󱗹 " .. prefix .. name
   local hl = selected and "TabSelected" or "TabUnselected"
   return highlight(hl, label)
 end

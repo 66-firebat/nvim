@@ -49,8 +49,10 @@ local function ensure_highlights()
     StatusColumnSlice = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
     -- mark chars
     StatusColumnMark = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
-    -- solid block appended after a mark (dark #2b2b2b fg, no bg)
-    StatusColumnMarkBlock = { fg = "#ff4400", bg = "none" },
+    -- solid block appended after a mark (subtle dark, matches gutter bg)
+    StatusColumnMarkBlock = { fg = "#2b2b2b", bg = "#2b2b2b" },
+    -- gitsign symbol (orange fg, invisible bg) — distinct from the █ block
+    StatusColumnGitsign = { fg = "#ff4400", bg = "none" },
     -- wrap icon / bolt
     StatusColumnWrap = { fg = "#ff4400", bg = "#2b2b2b" },
   }
@@ -365,7 +367,9 @@ function M.gitsign_for(lnum)
   -- Strip highlight markers (%#...#) and reset (%*) to leave the raw sign
   -- symbol(s) + padding.
   local sym = str:gsub("%%#.-#", ""):gsub("%%%*", "")
-  sym = sym:gsub("^%s+", "") -- trim left padding
+  -- Trim ALL surrounding whitespace so the sign is a single bare glyph that
+  -- occupies the same 1-cell width as the █ placeholder (prevents line shift).
+  sym = vim.trim(sym)
   if sym == "" then
     return nil
   end
@@ -406,7 +410,9 @@ function M.gutter_segment(args)
     local sep = mark and M.mark_icon(mark) or "│"
     local sephl = mark and "%#StatusColumnMark#" or "%#StatusColumnSearchCap#"
     local gs = M.gitsign_for(lnum)
-    local block = gs and ("%#StatusColumnMarkBlock#" .. gs) or ""
+    local block = gs
+      and ("%#StatusColumnGitsign#" .. gs)
+      or "%#StatusColumnMarkBlock#█"
     return "%#StatusColumnSearchLead#   "
       .. "%#StatusColumnSlice#" .. M.mode_letter()
       .. "%#StatusColumnCap# "
@@ -419,7 +425,9 @@ function M.gutter_segment(args)
   local sep = mark and M.mark_icon(mark) or "│"
   local sephl = mark and "%#StatusColumnMark#" or "%#StatusColumnBorder#"
   local gs = M.gitsign_for(lnum)
-  local block = gs and ("%#StatusColumnMarkBlock#" .. gs) or ""
+  local block = gs
+    and ("%#StatusColumnGitsign#" .. gs)
+    or "%#StatusColumnMarkBlock#█"
   return "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel# "

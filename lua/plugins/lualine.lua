@@ -229,7 +229,7 @@ return {
       sections = {},
       inactive_sections = {},
       winbar = {
-        lualine_a = {mode, get_git_branch, 'location',  diagnostics},
+        lualine_a = {'location', get_git_branch, mode, diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {},
         lualine_c = {'searchcount', diff},

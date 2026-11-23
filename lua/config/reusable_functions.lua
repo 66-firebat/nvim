@@ -419,8 +419,10 @@ function M.setup_pane_glyphs()
   -- End-of-buffer fill char is already " " in options.lua; keep it.
   -- vim.opt.fillchars:append({ eob = " " })
 
-  -- Window divider color (orange accent), already set in highlights.lua, but
-  -- ensure it is present for clarity.
+  -- Window divider color: orange fg, invisible bg.  In nvim 0.10+
+  -- `VertSplit` is linked to `WinSeparator`, so set the latter (and also
+  -- VertSplit for older nvim / explicit overrides).
+  vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#ff4400", bg = "none" })
   vim.api.nvim_set_hl(0, "VertSplit", { fg = "#ff4400", bg = "none" })
 end
 

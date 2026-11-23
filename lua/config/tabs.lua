@@ -253,7 +253,29 @@ local function render(winid)
     segments[#segments + 1] = { label = label, sep = sep, bufnr = b, sel = sel }
   end
 
-  -- Build flat output (render ALL tabs; nvim clips overflow on the right).
+  -- Trim RIGHTMOST non-selected tabs until everything fits (Emacs
+  -- MRU-tabs.el `nbutlast` logic).  The current buffer is ALREADY leftmost,
+  -- so trimming from the right always keeps it visible and renders strictly
+  -- left-to-right (never shifts the bar rightward).
+  local avail = win_width - icon_width
+  local hidden = 0
+  local function dispwidth(s)
+    return vim.fn.strdisplaywidth(s:gsub("%%#.-#", ""):gsub("%%%*", ""))
+  end
+  local function total_w(segs)
+    local w = 0
+    for _, s in ipairs(segs) do
+      w = w + dispwidth(s.label) + dispwidth(s.sep)
+    end
+    return w
+  end
+  while total_w(segments) + dispwidth(overflow_str(hidden + 1)) > avail
+    and #segments > 1 do
+    table.remove(segments) -- remove RIGHTMOST
+    hidden = hidden + 1
+  end
+
+  -- Build flat output (left-to-right).
   local out = icon_str
   for i, s in ipairs(segments) do
     out = out .. s.label
@@ -265,6 +287,10 @@ local function render(winid)
     out = out .. segments[#segments].sep
     -- Reset highlight so the trailing spaces after the last separ are invisible.
     out = out .. "%#TabEmpty#"
+  end
+
+  if hidden > 0 then
+    out = out .. highlight("TabOverflow", overflow_str(hidden))
   end
 
   return out

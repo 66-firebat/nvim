@@ -31,6 +31,10 @@ M.ring = {}
 -- `M.pos` tracks where we are in the ring during back/forward traversal.
 M.pos = 0
 
+-- The "home" position (where the cursor was before we started navigating
+-- back with C-o).  Forward (C-i) returns here when pos reaches 0 again.
+M.destination = nil
+
 -- Max ring length (Emacs evil-jumps-max-length defaults to 100).
 M.max_length = 100
 
@@ -133,32 +137,52 @@ function M.push()
   if #M.ring > M.max_length then
     M.ring[#M.ring] = nil
   end
-  M.pos = 1
+  -- After a jump, the cursor sits at the DESTINATION (not in the ring).  The
+  -- ring's newest entry is where we came FROM, so pos=0 means "at destination".
+  -- backward() then advances to pos=1 (ring[1] = origin) first.
+  M.pos = 0
 end
+
+--- Restore cursor to the given entry, recreating/opening its buffer if needed.
+local restore
 
 --- Step backward through the ring (Emacs `C-o` / `evil-jump-backward`).
 function M.backward()
-  if #M.ring < 2 then
+  if M.pos >= #M.ring then
     vim.notify("No previous jump", vim.log.levels.INFO)
     return
   end
-  -- Move pos forward in the ring (older entry) and jump to it.
-  M.pos = math.min(M.pos + 1, #M.ring)
+  -- On the first backward step, remember the current (destination) position so
+  -- that C-i can later return to it.
+  if M.pos == 0 then
+    M.destination = current_entry()
+  end
+  -- Advance to the next-older entry and jump to it.
+  M.pos = M.pos + 1
   M.jump_to(M.ring[M.pos])
 end
 
 --- Step forward through the ring (Emacs `C-i` / `evil-jump-forward`).
 function M.forward()
-  if M.pos <= 1 then
+  if M.pos <= 0 then
     vim.notify("No next jump", vim.log.levels.INFO)
     return
   end
   M.pos = M.pos - 1
+  if M.pos == 0 then
+    -- Return to the destination we started from.
+    if M.destination then
+      restore(M.destination)
+    else
+      vim.notify("No next jump", vim.log.levels.INFO)
+    end
+    return
+  end
   M.jump_to(M.ring[M.pos])
 end
 
 --- Restore cursor to the given entry, recreating/opening its buffer if needed.
-local function restore(entry)
+restore = function(entry)
   local bufnr = entry.bufnr
   if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
     vim.api.nvim_set_current_buf(bufnr)
@@ -188,7 +212,8 @@ M.jump_to = restore
 function M.load()
   deserialize()
   filter_dead()
-  M.pos = #M.ring
+  -- After load, cursor is at "current" (destination), ring holds past positions.
+  M.pos = 0
 end
 
 --- Save the ring to disk (filter dead files first).

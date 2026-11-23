@@ -296,6 +296,12 @@ function M.gutter_segment(args)
   local mark = M.build_mark_map()[lnum]
   local markstr = mark and mark or " "
 
+  -- Wrapped continuation lines: orange `┠`, matching the current-line accent
+  -- (so current and non-current wrapped lines share the same color).
+  if args.virtnum and args.virtnum ~= 0 then
+    return "%#StatusColumnBorderBump#      ┠"
+  end
+
   if lnum == cursor then
     -- Current line.
     local inst = M.search_instance()
@@ -335,7 +341,7 @@ function M.gutter_segment(args)
     .. markhl .. markstr
     .. "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel#" .. trimmed
-    .. "%#StatusColumnBorder#▏ "
+    .. "%#StatusColumnBorder#┃ "
 end
 
 -- =============================================================================

@@ -397,8 +397,8 @@ end
 --- Set the wrap/truncation glyph and window-divider color to match Emacs
 --- `panes.el` (accent `·`).
 function M.setup_pane_glyphs()
-  -- Wrap continuation glyph (Emacs panes.el uses `·`).
-  vim.opt.showbreak = "· "
+  -- No wrap/truncation indicator glyph (removed per user request).
+  vim.opt.showbreak = ""
   -- End-of-buffer fill char is already " " in options.lua; keep it.
   -- vim.opt.fillchars:append({ eob = " " })
 

@@ -50,7 +50,7 @@ local function ensure_highlights()
     -- mark chars
     StatusColumnMark = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
     -- solid block appended after a mark (dark #2b2b2b fg, no bg)
-    StatusColumnMarkBlock = { fg = "#2b2b2b", bg = "#2b2b2b" },
+    StatusColumnMarkBlock = { fg = "#ff4400", bg = "none" },
     -- wrap icon / bolt
     StatusColumnWrap = { fg = "#ff4400", bg = "#2b2b2b" },
   }
@@ -349,6 +349,29 @@ function M.mark_icon(ch)
   return ch
 end
 
+--- Return the gitsigns sign character for a line (1-based), or nil if the line
+--- has no git-change sign.  Uses gitsigns' OWN statuscolumn function, which
+--- reads the live sign state dynamically (so it always shows the correct,
+--- up-to-date symbol).
+function M.gitsign_for(lnum)
+  local ok, gs = pcall(require, "gitsigns")
+  if not ok or not gs or not gs.statuscolumn then
+    return nil
+  end
+  local ok2, str = pcall(gs.statuscolumn, 0, lnum)
+  if not ok2 or not str or str == "" then
+    return nil
+  end
+  -- Strip highlight markers (%#...#) and reset (%*) to leave the raw sign
+  -- symbol(s) + padding.
+  local sym = str:gsub("%%#.-#", ""):gsub("%%%*", "")
+  sym = sym:gsub("^%s+", "") -- trim left padding
+  if sym == "" then
+    return nil
+  end
+  return sym
+end
+
 -- =============================================================================
 --  statuscol segment functions
 -- =============================================================================
@@ -374,7 +397,7 @@ function M.gutter_segment(args)
   -- Wrapped continuation lines: orange `┠`, matching the current-line accent
   -- (so current and non-current wrapped lines share the same color).
   if args.virtnum and args.virtnum ~= 0 then
-    return "%#StatusColumnBorderBump#      ├"
+    return "%#StatusColumnBorderBump#     ├"
   end
 
   if lnum == cursor then
@@ -382,8 +405,9 @@ function M.gutter_segment(args)
     -- leading padding + mode letter + space + │ (or mark replaces │).
     local sep = mark and M.mark_icon(mark) or "│"
     local sephl = mark and "%#StatusColumnMark#" or "%#StatusColumnSearchCap#"
-    local block = mark and "%#StatusColumnMarkBlock#█" or ""
-    return "%#StatusColumnSearchLead#    "
+    local gs = M.gitsign_for(lnum)
+    local block = gs and ("%#StatusColumnMarkBlock#" .. gs) or ""
+    return "%#StatusColumnSearchLead#   "
       .. "%#StatusColumnSlice#" .. M.mode_letter()
       .. "%#StatusColumnCap# "
       .. sephl .. sep .. block
@@ -394,8 +418,9 @@ function M.gutter_segment(args)
   local label = labels[lnum] or "  "
   local sep = mark and M.mark_icon(mark) or "│"
   local sephl = mark and "%#StatusColumnMark#" or "%#StatusColumnBorder#"
-  local block = mark and "%#StatusColumnMarkBlock#█" or ""
-  return "%#StatusColumnLabel#  "
+  local gs = M.gitsign_for(lnum)
+  local block = gs and ("%#StatusColumnMarkBlock#" .. gs) or ""
+  return "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel#" .. M.display_label(label)
@@ -571,22 +596,8 @@ function M.setup(opts)
   statuscol.setup(vim.tbl_deep_extend("force", {
     relculright = true,
     segments = {
-      {
-        -- git signs (gitsigns namespace), shifted one cell right via a leading
-        -- space so they do not sit flush against the window edge.
-        text = { "%#StatusColumnLabel# " },
-      },
-      {
-        sign = {
-          namespace = { "gitsigns" },
-          maxwidth = 1,
-          colwidth = 1,
-          auto = false,
-        },
-        hl = "CursorLineNr",
-      },
-      -- The complete Emacs `line-prefix` per line (mark + label + scrollbar +
-      -- `┣`/`│` bump), rendered as ONE string so ordering is exactly right.
+      -- The complete Emacs `line-prefix` per line (mark + label + mode letter +
+      -- gitsign + `│`), rendered as ONE string so ordering is exactly right.
       { text = { M.gutter_segment } },
       { text = { "%#NoColor#" } },
     },

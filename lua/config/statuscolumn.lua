@@ -398,42 +398,40 @@ function M.gutter_segment(args)
   local mark = M.build_mark_map()[lnum]
   local markstr = mark and M.mark_icon(mark) or " "
 
-  -- Wrapped continuation lines: orange `┠`, matching the current-line accent
-  -- (so current and non-current wrapped lines share the same color).
+  -- The gitsign (or █ placeholder) is rendered at the 2ND CELL of every state.
+  local gs = M.gitsign_for(lnum)
+  local gitsign = gs
+    and ("%#StatusColumnGitsign#" .. gs)
+    or "%#StatusColumnMarkBlock#█"
+
+  -- Wrapped continuation lines: [space][gitsign][3 spaces][├].
   if args.virtnum and args.virtnum ~= 0 then
-    return "%#StatusColumnBorderBump#     ├"
+    return "%#StatusColumnBorderBump# " .. gitsign .. "%#StatusColumnBorderBump#   ├"
   end
 
   if lnum == cursor then
     -- Current line (search-active and normal are IDENTICAL):
-    -- leading padding + mode letter + space + │ (or mark replaces │).
+    --   [space][gitsign][space][mode letter][space][│/mark]
     local sep = mark and M.mark_icon(mark) or "│"
     local sephl = mark and "%#StatusColumnMark#" or "%#StatusColumnSearchCap#"
-    local gs = M.gitsign_for(lnum)
-    local block = gs
-      and ("%#StatusColumnGitsign#" .. gs)
-      or "%#StatusColumnMarkBlock#█"
-    return "%#StatusColumnSearchLead#   "
+    return "%#StatusColumnSearchLead# " .. gitsign
+      .. "%#StatusColumnSearchLead# "
       .. "%#StatusColumnSlice#" .. M.mode_letter()
       .. "%#StatusColumnCap# "
-      .. sephl .. sep .. block
+      .. sephl .. sep
   end
 
-  -- Non-current line:  SP SP SP LABEL │ SP  (mark replaces │ when present)
+  -- Non-current line: [space][gitsign][space][label][│/mark]
   local labels = M.build_label_map()
   local label = labels[lnum] or "  "
   local sep = mark and M.mark_icon(mark) or "│"
   local sephl = mark and "%#StatusColumnMark#" or "%#StatusColumnBorder#"
-  local gs = M.gitsign_for(lnum)
-  local block = gs
-    and ("%#StatusColumnGitsign#" .. gs)
-    or "%#StatusColumnMarkBlock#█"
-  return "%#StatusColumnLabel# "
-    .. "%#StatusColumnLabel# "
+  return "%#StatusColumnLabel# " .. gitsign
     .. "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel#" .. M.display_label(label)
-    .. sephl .. sep .. block .. " "
+    .. sephl .. sep .. " "
 end
+
 
 -- =============================================================================
 --  Jump (replaces vai.jump.start)

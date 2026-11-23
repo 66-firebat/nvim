@@ -28,8 +28,7 @@ local M = {}
 -- =============================================================================
 
 -- Groups: a label mapped to the list of nvim filetypes that belong to it.
--- The FIRST filetype in each list is the "representative" whose icon (via
--- mini.icons) is shown as the group icon segment.
+-- Icons are hardcoded separately in GROUP_ICONS (no mini.icons dependency).
 local GROUPS = {
   Code = {
     "lua", "python", "go", "rust", "java", "c", "cpp", "javascript",
@@ -61,20 +60,23 @@ local function group_for_buffer(bufnr)
   return FALLBACK_GROUP
 end
 
---- Return the icon for a GROUP label, derived from its representative filetype
---- via mini.icons (falls back to a generic icon).
+--- Hardcoded icon per group (no mini.icons dependency).  The fallback covers
+--- the "Buffers" catch-all and any group without an explicit icon.
+local GROUP_ICONS = {
+  Code     = "󰣕",
+  FileMgr  = "󰏇",
+  Docs     = "",
+  Config   = "",
+  Terminal = "",
+  Broot    = "󰙅",
+  Tools    = "",
+}
+
+local FALLBACK_ICON = ""
+
+--- Return the hardcoded icon for a GROUP label (falls back to the catch-all).
 local function group_icon(group)
-  local fts = GROUPS[group]
-  if fts and fts[1] then
-    local ok, mi = pcall(require, "mini.icons")
-    if ok and mi and mi.get then
-      local icon = mi.get("filetype", fts[1])
-      if icon and icon ~= "" then
-        return icon
-      end
-    end
-  end
-  return "" -- fallback (catch-all) icon
+  return GROUP_ICONS[group] or FALLBACK_ICON
 end
 
 -- =============================================================================
@@ -185,7 +187,7 @@ local function render(winid)
 
   local win_width = vim.api.nvim_win_get_width(winid)
   local icon_str = group_icon_segment(group, lnum)
-  local icon_width = vim.fn.strdisplaywidth(icon_str)
+  local icon_width = vim.fn.strdisplaywidth(icon_str:gsub("%%#.-#", ""):gsub("%%%*", ""))
 
   -- Build tab segments.
   local segments = {}
@@ -199,14 +201,19 @@ local function render(winid)
   -- Trim rightmost non-selected tabs until they fit.
   local avail = win_width - icon_width
   local hidden = 0
+  local function dispwidth(s)
+    -- Strip highlight markers (%#...#) and reset (%*) before measuring; they
+    -- occupy zero display width but strdisplaywidth would otherwise count them.
+    return vim.fn.strdisplaywidth(s:gsub("%%#.-#", ""):gsub("%%%*", ""))
+  end
   local function total_width(segs)
     local w = 0
     for _, s in ipairs(segs) do
-      w = w + vim.fn.strdisplaywidth(s.label) + vim.fn.strdisplaywidth(s.sep)
+      w = w + dispwidth(s.label) + dispwidth(s.sep)
     end
     return w
   end
-  while total_width(segments) + vim.fn.strdisplaywidth(overflow_str(hidden + 1)) > avail
+  while total_width(segments) + dispwidth(overflow_str(hidden + 1)) > avail
     and #segments > 1 and hidden < 999 do
     table.remove(segments)
     hidden = hidden + 1

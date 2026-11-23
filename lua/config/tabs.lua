@@ -202,7 +202,7 @@ local function group_icon_segment(group, lnum)
     .. highlight("TabGroupLnum", "")
 end
 
---- Main render function for a window's winbar.
+--- Main render function for a window's winbar (PURE — does not mutate state).
 local function render(winid)
   local bufnr = vim.api.nvim_win_get_buf(winid)
   local group = group_for_buffer(bufnr)
@@ -210,8 +210,7 @@ local function render(winid)
 
   local buf_list = mru_group(group)
   -- Always show the CURRENT buffer's tab, even if it isn't in the
-  -- visible_buffers() list (e.g. after C-o jumps into a scratch/unlisted
-  -- buffer).  This prevents the winbar from vanishing entirely.
+  -- visible_buffers() list.  This prevents the winbar from vanishing entirely.
   local current_present = false
   for _, b in ipairs(buf_list) do
     if b == bufnr then current_present = true break end
@@ -223,8 +222,17 @@ local function render(winid)
     buf_list = { bufnr }
   end
 
-  -- Ensure current buffer is most-recent in its group.
-  touch(bufnr)
+  -- Move the CURRENT buffer to the FRONT (leftmost), exactly like Emacs
+  -- MRU-tabs.el does: (delq win-buf) then (cons win-buf).  This must NOT
+  -- mutate mru_ts (that would cause re-render flashing); it only reorders the
+  -- local copy for display.
+  for i, b in ipairs(buf_list) do
+    if b == bufnr then
+      table.remove(buf_list, i)
+      table.insert(buf_list, 1, bufnr)
+      break
+    end
+  end
 
   local win_width = vim.api.nvim_win_get_width(winid)
   local icon_str = group_icon_segment(group, lnum)
@@ -245,28 +253,7 @@ local function render(winid)
     segments[#segments + 1] = { label = label, sep = sep, bufnr = b, sel = sel }
   end
 
-  -- Trim rightmost non-selected tabs until they fit.
-  local avail = win_width - icon_width
-  local hidden = 0
-  local function dispwidth(s)
-    -- Strip highlight markers (%#...#) and reset (%*) before measuring; they
-    -- occupy zero display width but strdisplaywidth would otherwise count them.
-    return vim.fn.strdisplaywidth(s:gsub("%%#.-#", ""):gsub("%%%*", ""))
-  end
-  local function total_width(segs)
-    local w = 0
-    for _, s in ipairs(segs) do
-      w = w + dispwidth(s.label) + dispwidth(s.sep)
-    end
-    return w
-  end
-  while total_width(segments) + dispwidth(overflow_str(hidden + 1)) > avail
-    and #segments > 1 and hidden < 999 do
-    table.remove(segments)
-    hidden = hidden + 1
-  end
-
-  -- Build flat output.
+  -- Build flat output (render ALL tabs; nvim clips overflow on the right).
   local out = icon_str
   for i, s in ipairs(segments) do
     out = out .. s.label
@@ -278,10 +265,6 @@ local function render(winid)
     out = out .. segments[#segments].sep
     -- Reset highlight so the trailing spaces after the last separ are invisible.
     out = out .. "%#TabEmpty#"
-  end
-
-  if hidden > 0 then
-    out = out .. highlight("TabOverflow", overflow_str(hidden))
   end
 
   return out

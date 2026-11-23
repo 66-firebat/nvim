@@ -108,6 +108,23 @@ function M.switch_previous_buffer()
   vim.cmd("buffer " .. alt)
 end
 
+--- Jump to a mark (global or local), recording the pre-jump position in the
+--- global jump ring so C-o returns here.  `mode` is "`" (exact column) or
+--- "'" (line start).
+--- Emacs: jumping to a mark records to `evil-jump` list.
+function M.jump_to_mark(mode)
+  -- Read the target mark character (a-z / A-Z).
+  local ch = vim.fn.nr2char(vim.fn.getchar())
+  if ch == "\27" or ch == "" then
+    return
+  end
+  -- Record current position before the jump.
+  local ok, jump = pcall(require, "config.jumplist")
+  if ok and jump and jump.push then jump.push() end
+  -- Perform the mark jump: ` for exact column, ' for line start.
+  vim.cmd("normal! " .. mode .. ch)
+end
+
 -- =============================================================================
 --  §3  File managers / terminals
 -- =============================================================================

@@ -142,9 +142,9 @@ vim.keymap.set({ "n", "x", "v" }, ";", function()
   require("config.statuscolumn").jump()
 end, { noremap = true, desc = "[statuscolumn]: static-label line jump" })
 
--- Jumps to marks (respecting mark column positions)
-vim.keymap.set("n", "'", "`", { desc = "Jump to exact mark column" })
-vim.keymap.set("n", '"', "'", { desc = "Jump to mark line start" })
+-- Jumps to marks (respecting mark column positions), recording to jumplist
+vim.keymap.set("n", "'", function() M.jump_to_mark("`") end, { desc = "Jump to exact mark column" })
+vim.keymap.set("n", '"', function() M.jump_to_mark("'") end, { desc = "Jump to mark line start" })
 
 -- Pipes zoxide output to an oil buffer
 vim.keymap.set("n", "<M-f>", function()

@@ -160,8 +160,9 @@ local function overflow_str(n)
 end
 
 --- Group icon + line-number segment (Emacs my/ct--group-icon).
+--- The leading icon is the overflow glyph 󰲠 (replaces the per-group icon).
 local function group_icon_segment(group, lnum)
-  local icon = group_icon(group)
+  local icon = "󰲠"
   local line_str = tostring(lnum)
   -- 6-char hyphen-padded (Emacs pads to 6 with hyphens).
   local padded = line_str
@@ -247,6 +248,8 @@ local function render(winid)
   end
   if #segments > 0 then
     out = out .. segments[#segments].sep
+    -- Reset highlight so the trailing spaces after the last separ are invisible.
+    out = out .. "%#TabEmpty#"
   end
 
   if hidden > 0 then
@@ -295,6 +298,9 @@ local function ensure_highlights()
     TabUnselected    = { fg = "#2b2b2b", bg = "#5c5c5c" },
     TabOverflow      = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
     TabModified      = { fg = "#ff4400", bg = "#2b2b2b" },
+    -- Resets highlight so the trailing area after the last tab blends into the
+    -- window/terminal background (no fg/bg).
+    TabEmpty         = { fg = "#2b2b2b", bg = "#2b2b2b" },
   }
   for name, opts in pairs(defs) do
     vim.api.nvim_set_hl(0, name, opts)

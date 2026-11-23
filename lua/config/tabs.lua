@@ -80,15 +80,42 @@ local function group_icon(group)
 end
 
 --- Return the icon for the CURRENT buffer's filetype (via nvim-web-devicons).
+--- Register custom filetype icons with nvim-web-devicons (run once).
+local devicons_configured = false
+local function ensure_devicons_icons()
+  if devicons_configured then
+    return
+  end
+  devicons_configured = true
+  local ok, dev = pcall(require, "nvim-web-devicons")
+  if not ok or not dev or not dev.setup then
+    return
+  end
+  dev.setup({
+    override_by_extension = {
+      hjson = { icon = "󰘓", color = "#ff4400", name = "Hjson" },
+      -- Add more custom filetypes here, e.g.:
+      -- yaml  = { icon = "", color = "#ff4400", name = "Yaml" },
+      -- toml  = { icon = "", color = "#ff4400", name = "Toml" },
+    },
+  })
+end
+
 local function current_file_icon(bufnr)
+  ensure_devicons_icons()
   local ok, dev = pcall(require, "nvim-web-devicons")
   if not ok or not dev or not dev.get_icon then
-    return ""
+    return "" -- generic file icon fallback
   end
   local name = vim.api.nvim_buf_get_name(bufnr)
   local ft = vim.bo[bufnr].filetype
   local icon = dev.get_icon(name, ft)
-  return icon or ""
+  if icon and icon ~= "" then
+    return icon
+  end
+  -- Fallback: generic file icon for unknown filetypes (e.g. .hjson).
+  local def = dev.get_default_icon and dev.get_default_icon()
+  return (def and def.icon) or ""
 end
 
 -- =============================================================================
@@ -176,9 +203,10 @@ local function tab_label(bufnr, selected)
   local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
   if name == "" then name = vim.fn.bufname(bufnr) end
   local num = get_stable_number(bufnr)
-  local label = " " .. num .. "󱗹 " .. prefix .. name
+  local body = " " .. num .. "  " .. prefix .. name
+  local lead_hl = selected and "TabLeadSel" or "TabLeadUnsel"
   local hl = selected and "TabSelected" or "TabUnselected"
-  return highlight(hl, label)
+  return highlight(lead_hl, "") .. highlight(hl, body)
 end
 
 --- Overflow icon (Emacs my/ct--overflow-str + my/ct--overflow-icons).
@@ -190,20 +218,12 @@ local function overflow_str(n)
   return " " .. (overflow_icons[idx] or overflow_icons[10])
 end
 
---- Group icon + line-number segment.
+--- Group icon segment (the line-number segment removed).
 --- The leading glyph is the overflow glyph for the NUMBER OF BUFFERS in the
 --- current group (1->󰲠, 2->󰲢, ..., 9->󰲰, 10+->󰲲), matching Emacs MRU-tabs.el.
 local function group_icon_segment(group, count, lnum)
   local icon = overflow_icons[math.min(math.max(count, 1), 10)] or overflow_icons[10]
-  local line_str = tostring(lnum)
-  -- 6-char hyphen-padded (Emacs pads to 6 with hyphens).
-  local padded = line_str
-  while #padded < 6 do padded = "-" .. padded end
-
   return highlight("TabGroupIcon", "  " .. icon .. " ")
-    .. highlight("TabGroupSep", "")
-    .. highlight("TabGroupLnum", " " .. padded .. " ")
-    .. highlight("TabGroupLnum", "")
 end
 
 --- Main render function for a window's winbar (PURE — does not mutate state).
@@ -245,7 +265,9 @@ local function render(winid)
   -- the first tab's powerline lead).
   local ficon = current_file_icon(bufnr)
   if ficon ~= "" then
-    icon_str = icon_str .. highlight("TabGroupIcon", " " .. ficon .. " ")
+    -- Prepend a powerline cap (󱗴) with fg=#2b2b2b / bg=#ff4400 before the icon.
+    icon_str = icon_str .. highlight("TabFileCap", "")
+    icon_str = icon_str .. highlight("TabFileIcon", " " .. ficon .. " ")
   end
   local icon_width = vim.fn.strdisplaywidth(icon_str:gsub("%%#.-#", ""):gsub("%%%*", ""))
 
@@ -334,10 +356,17 @@ end
 local function ensure_highlights()
   local defs = {
     TabGroupIcon     = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
+    -- Filetype icon (inverted vs TabGroupIcon): dark fg on orange bg.
+    TabFileIcon      = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
+    -- Powerline cap before the filetype icon: fg=#2b2b2b / bg=#ff4400.
+    TabFileCap       = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
     TabGroupSep      = { fg = "#2b2b2b", bg = "#ff4400" },
     TabGroupLnum     = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
     TabSelected      = { fg = "#2b2b2b", bg = "#8c8c8c", bold = true },
     TabUnselected    = { fg = "#2b2b2b", bg = "#5c5c5c" },
+    -- Powerline lead glyph: orange fg, same bg as the tab (grey).
+    TabLeadSel       = { fg = "#ff4400", bg = "#8c8c8c", bold = true },
+    TabLeadUnsel     = { fg = "#ff4400", bg = "#5c5c5c" },
     TabOverflow      = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
     TabModified      = { fg = "#ff4400", bg = "#2b2b2b" },
     -- Resets highlight so the trailing area after the last tab blends into the

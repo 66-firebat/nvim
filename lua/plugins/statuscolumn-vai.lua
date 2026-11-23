@@ -1,15 +1,8 @@
-return {
-  "luukvbaal/statuscol.nvim",
-  dependencies = {
-    -- vai.nvim is no longer used for labels/jumping: the static single-char
-    -- labeling + jump reader are implemented in lua/config/statuscolumn.lua.
-    -- We keep this dependency list empty of vai so it is not auto-loaded.
-  },
-  config = function()
-    -- Delegate the entire statuscolumn to our port (lua/config/statuscolumn.lua),
-    -- which reproduces emacs/statuscolumn.el: static top-to-bottom letter labels,
-    -- marks, search-instance counter, scrollbar slice, wrap icon, bolt, and the
-    -- `┣`/`┃` current-line bump.
-    require("config.statuscolumn").setup()
-  end,
-}
+-- statuscol.nvim is NO LONGER USED.  The statuscolumn is now rendered by
+-- lua/config/statuscolumn.lua directly via `vim.o.statuscolumn` (no caching
+-- layer), so mark/label/gitsign updates render immediately on every redraw.
+--
+-- This file is kept as a disabled/empty spec so lazy.nvim does not install
+-- statuscol.nvim anymore.  Do not delete it.
+
+return {}

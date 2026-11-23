@@ -556,22 +556,41 @@ end
 
 --- Configure the statuscolumn (called from the statuscol plugin's config).
 --- Replaces the old vai-based labels with M's static labels + new elements.
+--- We set the statuscolumn DIRECTLY (no statuscol.nvim caching layer) so the
+--- mark/label/gitsign updates render immediately on every redraw.
 function M.setup(opts)
   opts = opts or {}
-  local statuscol = require("statuscol")
 
   ensure_highlights()
   M.setup_search_hooks()
 
-  statuscol.setup(vim.tbl_deep_extend("force", {
-    relculright = true,
-    segments = {
-      -- The complete Emacs `line-prefix` per line (mark + label + mode letter +
-      -- gitsign + `│`), rendered as ONE string so ordering is exactly right.
-      { text = { M.gutter_segment } },
-      { text = { "%#NoColor#" } },
-    },
-  }, opts))
+  -- Direct statuscolumn expression: re-evaluates on every redraw with NO
+  -- statuscol.nvim tick-gated cache, so marks/labels/gitsigns update at once.
+  vim.o.statuscolumn = [[%{%v:lua.require('config.statuscolumn').render()%}]]
+end
+
+--- Entry point for the statuscolumn %{...} expression.  Builds the args table
+--- from `v:lnum`/`v:virtnum` and renders the full gutter for the current line.
+function M.render()
+  local args = {
+    lnum = vim.v.lnum,
+    virtnum = vim.v.virtnum or 0,
+    relnum = vim.v.relnum,
+  }
+  return M.gutter_segment(args)
+end
+
+--- Diagnostic: print the current mark state for the cursor line (run
+--- `:lua require('config.statuscolumn').debug_marks()` to see which mark
+--- would be shown and why).
+function M.debug_marks()
+  local line = vim.fn.line(".")
+  local map = M.build_mark_map()
+  print(string.format(
+    "line %d: mark=%q, _last_mark=%q, _last_line=%s, _last_buf=%s, cur_buf=%s",
+    line, tostring(map[line]), tostring(M._last_mark),
+    tostring(M._last_mark_line), tostring(M._last_buf),
+    tostring(vim.api.nvim_get_current_buf())))
 end
 
 return M

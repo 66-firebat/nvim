@@ -216,6 +216,11 @@ function M.set_mark()
   M._last_mark = ch
   M._last_mark_line = row
   M._last_buf = buf
+  -- Defer the redraw to AFTER the keymap callback fully completes; a redraw
+  -- inside a getchar()-consuming mapping may not flush immediately.
+  vim.schedule(function()
+    vim.cmd("redraw!")
+  end)
 end
 
 -- =============================================================================

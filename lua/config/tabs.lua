@@ -184,7 +184,7 @@ local function tab_label(bufnr, selected)
   local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
   if name == "" then name = vim.fn.bufname(bufnr) end
   local num = get_stable_number(bufnr)
-  local body = " " .. num .. "  " .. prefix .. name
+  local body = " " .. num .. " 󱗹 " .. prefix .. name
   local lead_hl = selected and "TabLeadSel" or "TabLeadUnsel"
   local hl = selected and "TabSelected" or "TabUnselected"
   return highlight(lead_hl, "") .. highlight(hl, body)
@@ -193,7 +193,7 @@ end
 --- Overflow icon (Emacs my/ct--overflow-str + my/ct--overflow-icons).
 --- Maps a count 1..10+ to the Nerd Font glyph (1->󰲠, 2->󰲢, ..., 9->󰲰, 10+->󰲲).
 --- 1-indexed: index 1 = count 1, etc.
-local overflow_icons = { "󰲠", "󰲢", "󰲤", "󰲦", "󰲨", "󰲪", "󰲬", "󰲮", "󰲰", "󰲲" }
+local overflow_icons = { "󰎤", "󰎧", "󰎪", "󰎭", "󰎱", "󰎳", "󰎶", "󰎹", "󰎼", "󰎿" }
 local function overflow_str(n)
   local idx = math.min(math.max(n, 1), 10)
   return " " .. (overflow_icons[idx] or overflow_icons[10])
@@ -204,7 +204,7 @@ end
 --- current group (1->󰲠, 2->󰲢, ..., 9->󰲰, 10+->󰲲), matching Emacs MRU-tabs.el.
 local function group_icon_segment(group, count, lnum)
   local icon = overflow_icons[math.min(math.max(count, 1), 10)] or overflow_icons[10]
-  return highlight("TabGroupIcon", "  " .. icon .. " ")
+  return highlight("TabGroupIcon", " " .. icon .. " ")
 end
 
 --- Main render function for a window's winbar (PURE — does not mutate state).
@@ -246,8 +246,6 @@ local function render(winid)
   -- the first tab's powerline lead).
   local ficon = current_file_icon(bufnr)
   if ficon ~= "" then
-    -- Prepend a powerline cap (󱗴) with fg=#2b2b2b / bg=#ff4400 before the icon.
-    icon_str = icon_str .. highlight("TabFileCap", "")
     icon_str = icon_str .. highlight("TabFileIcon", " " .. ficon .. " ")
   end
   local icon_width = vim.fn.strdisplaywidth(icon_str:gsub("%%#.-#", ""):gsub("%%%*", ""))
@@ -345,9 +343,9 @@ local function ensure_highlights()
     TabGroupLnum     = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
     TabSelected      = { fg = "#2b2b2b", bg = "#8c8c8c", bold = true },
     TabUnselected    = { fg = "#2b2b2b", bg = "#5c5c5c" },
-    -- Powerline lead glyph: orange fg, same bg as the tab (grey).
+    -- Powerline lead glyph: selected lead is orange; non-selected lead is dark.
     TabLeadSel       = { fg = "#ff4400", bg = "#8c8c8c", bold = true },
-    TabLeadUnsel     = { fg = "#ff4400", bg = "#5c5c5c" },
+    TabLeadUnsel     = { fg = "#2b2b2b", bg = "#5c5c5c" },
     TabOverflow      = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
     TabModified      = { fg = "#ff4400", bg = "#2b2b2b" },
     -- Resets highlight so the trailing area after the last tab blends into the

@@ -79,6 +79,18 @@ local function group_icon(group)
   return GROUP_ICONS[group] or FALLBACK_ICON
 end
 
+--- Return the icon for the CURRENT buffer's filetype (via nvim-web-devicons).
+local function current_file_icon(bufnr)
+  local ok, dev = pcall(require, "nvim-web-devicons")
+  if not ok or not dev or not dev.get_icon then
+    return ""
+  end
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  local ft = vim.bo[bufnr].filetype
+  local icon = dev.get_icon(name, ft)
+  return icon or ""
+end
+
 -- =============================================================================
 --  Buffer list (Emacs my/ct--visible-buffers)
 -- =============================================================================
@@ -187,6 +199,12 @@ local function render(winid)
 
   local win_width = vim.api.nvim_win_get_width(winid)
   local icon_str = group_icon_segment(group, lnum)
+  -- Append the CURRENT file's icon right after the line-number segment (before
+  -- the first tab's powerline lead).
+  local ficon = current_file_icon(bufnr)
+  if ficon ~= "" then
+    icon_str = icon_str .. highlight("TabGroupIcon", " " .. ficon .. " ")
+  end
   local icon_width = vim.fn.strdisplaywidth(icon_str:gsub("%%#.-#", ""):gsub("%%%*", ""))
 
   -- Build tab segments.

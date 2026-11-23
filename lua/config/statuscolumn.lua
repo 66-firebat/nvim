@@ -17,7 +17,7 @@
 --    4. Scrollbar-thumb slice icon (8-band, based on point/line-count)
 --    5. Wrap icon on wrapped continuation lines (current vs non-current)
 --    6. Bolt icon while a jump is active
---    7. `┣` / `┃` current-line bump (already present, re-implemented here)
+--    7. `┣` / `│` current-line bump (already present, re-implemented here)
 --
 --  Integration: rendered via statuscol.nvim `text` segments.  `keymaps.lua`
 --  binds `;` to `SC.jump()` (replacing `vai.jump.start`).
@@ -44,7 +44,7 @@ local function ensure_highlights()
     -- inverted powerline caps (fg/bg swapped from the groups they sit beside),
     -- used ONLY for the two cap glyphs in the search line.
     StatusColumnSearchCap = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
-    StatusColumnCap = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
+    StatusColumnCap = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
     -- the thumb-scroll slice icon during search (inverted vs StatusColumnCap).
     StatusColumnSlice = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
     -- mark chars
@@ -68,9 +68,27 @@ local punct = {
   ";", "<", ">", "?", "/", "~",
 }
 
+--- Map a lowercase letter a-z to its SQUARED Nerd Font icon
+--- (MDI alpha-X-box, U+F0B08 stride 1).  Non-letters are returned unchanged.
+local function encircle(ch)
+  local b = ch:byte()
+  if b and b >= 97 and b <= 122 then
+    return vim.fn.nr2char(0xF0B08 + (b - 97))
+  end
+  return ch
+end
+
+--- Convert a raw (padded) jump label into its DISPLAY form, squaring any
+--- lowercase letters but leaving spaces/punctuation/multi-char padding intact.
+function M.display_label(raw)
+  return (raw:gsub("[a-z]", encircle))
+end
+
 --- Return the single-char label for a 0-based index N, mirroring
 --- Emacs `sc--index-label`: 0->a, 25->z, 26->".", 27->",", ...
 --- After a-z and punctuation are exhausted, fall back to multi-char (aa, ab, …).
+--- These are the RAW labels used for jump matching; the DISPLAY glyph is
+--- produced separately by `encircle` at render time.
 local function index_label(n)
   if n < 26 then
     return string.char(97 + n)
@@ -88,10 +106,12 @@ end
 
 --- Convert a visible (top-to-bottom) 0-based index into a label, left-padded
 --- to a fixed width so all labels occupy the same number of cells.
+--- Uses DISPLAY width (encircled glyphs are multi-byte but 1 cell each).
 local function padded_label(idx, width)
   local l = index_label(idx)
-  if #l < width then
-    return l .. string.rep(" ", width - #l)
+  local dw = vim.fn.strdisplaywidth(l)
+  if dw < width then
+    return l .. string.rep(" ", width - dw)
   end
   return l
 end
@@ -286,26 +306,31 @@ function M.slice_icon()
   return slice_icons[band]
 end
 
---- Return the single-letter indicator for the current Vim mode.
---- N=normal, I=insert, V=visual, O=operator-pending, C=command-line, etc.
+--- Return the single-letter indicator for the current Vim mode as a SQUARED
+--- Nerd Font (MDI alpha-X-box) glyph.
+--- n=normal, i=insert, v=visual, o=operator-pending, c=command, t=terminal, etc.
 function M.mode_letter()
   local mode = vim.fn.mode() -- e.g. "n", "i", "v", "V", "\22", "o", "c", "t", "R", "s"
+  -- Map each mode to its alpha-X-box glyph (U+F0B08 is alpha-a-box, +1 per letter).
+  local function box(ch)
+    return vim.fn.nr2char(0xF0B08 + (ch:byte() - 97))
+  end
   local map = {
-    n = "N",
-    i = "I",
-    v = "V",
-    V = "V",
-    ["\22"] = "V", -- visual-block
-    o = "O",
-    c = "C",
-    t = "T",
-    R = "R",
-    r = "R",
-    s = "S",
-    S = "S",
-    ["\19"] = "S", -- select-block
+    n = box("n"),
+    i = box("i"),
+    v = box("v"),
+    V = box("v"),
+    ["\22"] = box("v"), -- visual-block
+    o = box("o"),
+    c = box("c"),
+    t = box("t"),
+    R = box("r"),
+    r = box("r"),
+    s = box("s"),
+    S = box("s"),
+    ["\19"] = box("s"), -- select-block
   }
-  return map[mode] or mode:upper()
+  return map[mode] or mode
 end
 
 --- Map a mark character (a-z / A-Z) to its Nerd Font (MDI alpha) icon.
@@ -347,7 +372,7 @@ function M.gutter_segment(args)
   -- Wrapped continuation lines: orange `┠`, matching the current-line accent
   -- (so current and non-current wrapped lines share the same color).
   if args.virtnum and args.virtnum ~= 0 then
-    return "%#StatusColumnBorderBump#      ┠"
+    return "%#StatusColumnBorderBump#      ├"
   end
 
   if lnum == cursor then
@@ -359,39 +384,32 @@ function M.gutter_segment(args)
       -- The leading glyph is the Powerline "media-playlist-speed"-style PUA
       -- char U+E0D6 (rendered as the orange lead, NOT a plain space/block).
       return "%#StatusColumnSearchLead# "
-        .. "%#StatusColumnSearchCap#"
+        .. "%#StatusColumnSearchCap#│"
         .. "%#StatusColumnSearch#" .. markstr
         .. "%#StatusColumnSearch#" .. "  "
-        .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.mode_letter() .. " "
+        .. "%#StatusColumnCap#│" .. "%#StatusColumnSlice#" .. M.mode_letter() .. " "
     end
-    -- Normal (no search): same as search line but NO counter and NO jump
-    -- label — just mark + cap/slice suffix with 3-char spacing.
-    return "%#StatusColumnSearchLead# "
-      .. "%#StatusColumnSearchCap#"
-      .. "%#StatusColumnSearch#" .. markstr
-      .. "%#StatusColumnSearch#   "
-      .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.mode_letter() .. " "
+    -- Normal (no search): leading padding + mode letter + space + │.
+    -- Desired:  "      "  M.mode_letter()  " "  "│"
+    return "%#StatusColumnSearchLead#    "
+      .. "%#StatusColumnSlice#" .. M.mode_letter()
+      .. "%#StatusColumnCap# "
+      .. "%#StatusColumnSearchCap#│"
   end
 
-  -- Non-current line:  SP SP MARK SP LABEL ┃ SP
+  -- Non-current line:  SP SP MARK SP LABEL │ SP
   local labels = M.build_label_map()
   local label = labels[lnum] or "  "
-  local trimmed = vim.trim(label)
-  -- Ensure the label always occupies 2 display cells, even when empty, so the
-  -- `┃` separator stays aligned across label/no-label lines.  Single-char
-  -- labels get a trailing space; empty labels keep their leading 2 spaces.
-  if trimmed == "" then
-    trimmed = "  "
-  elseif #trimmed == 1 then
-    trimmed = trimmed .. " "
-  end
+  -- `padded_label` already pads to 2 display cells (glyph + trailing space),
+  -- so use it directly without re-trimming (which would strip the pad and
+  -- break alignment for multi-byte encircled glyphs).
 
   local markhl = mark and "%#StatusColumnMark#" or "%#StatusColumnLabel#"
   return "%#StatusColumnLabel#  "
     .. markhl .. markstr
     .. "%#StatusColumnLabel# "
-    .. "%#StatusColumnLabel#" .. trimmed
-    .. "%#StatusColumnBorder#┃ "
+    .. "%#StatusColumnLabel#" .. M.display_label(label)
+    .. "%#StatusColumnBorder#│ "
 end
 
 -- =============================================================================

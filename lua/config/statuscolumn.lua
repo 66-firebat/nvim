@@ -49,6 +49,8 @@ local function ensure_highlights()
     StatusColumnSlice = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
     -- mark chars
     StatusColumnMark = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
+    -- solid block appended after a mark (dark #2b2b2b fg, no bg)
+    StatusColumnMarkBlock = { fg = "#2b2b2b", bg = "#2b2b2b" },
     -- wrap icon / bolt
     StatusColumnWrap = { fg = "#ff4400", bg = "#2b2b2b" },
   }
@@ -376,40 +378,28 @@ function M.gutter_segment(args)
   end
 
   if lnum == cursor then
-    -- Current line.
-    local inst = M.search_instance()
-    if inst then
-      -- Search active (Emacs sc--current-str search branch):
-      --   SP  󰃖(U+E0D6) MARK search(3) ┣ SP
-      -- The leading glyph is the Powerline "media-playlist-speed"-style PUA
-      -- char U+E0D6 (rendered as the orange lead, NOT a plain space/block).
-      return "%#StatusColumnSearchLead# "
-        .. "%#StatusColumnSearchCap#│"
-        .. "%#StatusColumnSearch#" .. markstr
-        .. "%#StatusColumnSearch#" .. "  "
-        .. "%#StatusColumnCap#│" .. "%#StatusColumnSlice#" .. M.mode_letter() .. " "
-    end
-    -- Normal (no search): leading padding + mode letter + space + │.
-    -- Desired:  "      "  M.mode_letter()  " "  "│"
+    -- Current line (search-active and normal are IDENTICAL):
+    -- leading padding + mode letter + space + │ (or mark replaces │).
+    local sep = mark and M.mark_icon(mark) or "│"
+    local sephl = mark and "%#StatusColumnMark#" or "%#StatusColumnSearchCap#"
+    local block = mark and "%#StatusColumnMarkBlock#█" or ""
     return "%#StatusColumnSearchLead#    "
       .. "%#StatusColumnSlice#" .. M.mode_letter()
       .. "%#StatusColumnCap# "
-      .. "%#StatusColumnSearchCap#│"
+      .. sephl .. sep .. block
   end
 
-  -- Non-current line:  SP SP MARK SP LABEL │ SP
+  -- Non-current line:  SP SP SP LABEL │ SP  (mark replaces │ when present)
   local labels = M.build_label_map()
   local label = labels[lnum] or "  "
-  -- `padded_label` already pads to 2 display cells (glyph + trailing space),
-  -- so use it directly without re-trimming (which would strip the pad and
-  -- break alignment for multi-byte encircled glyphs).
-
-  local markhl = mark and "%#StatusColumnMark#" or "%#StatusColumnLabel#"
+  local sep = mark and M.mark_icon(mark) or "│"
+  local sephl = mark and "%#StatusColumnMark#" or "%#StatusColumnBorder#"
+  local block = mark and "%#StatusColumnMarkBlock#█" or ""
   return "%#StatusColumnLabel#  "
-    .. markhl .. markstr
+    .. "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel#" .. M.display_label(label)
-    .. "%#StatusColumnBorder#│ "
+    .. sephl .. sep .. block .. " "
 end
 
 -- =============================================================================

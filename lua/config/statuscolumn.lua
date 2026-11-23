@@ -146,11 +146,17 @@ end
 --- first (a..zA..Z order), then recent marks override (only if not claimed).
 function M.build_mark_map()
   local map = {}
+  local cur_buf = vim.api.nvim_get_current_buf()
 
   local function put(ch)
     local pos = vim.fn.getpos("'" .. ch)
     local lnum = pos and pos[2] or 0
-    if lnum and lnum > 0 then
+    -- Filter by buffer: local marks (a-z) are already scoped to the current
+    -- buffer, but global marks (A-Z) return the mark's OWN buffer in pos[1].
+    -- Ignore any mark whose buffer is not the current one, so a global mark
+    -- set in file1 does not bleed into file2.
+    local mark_buf = pos and pos[1] or 0
+    if lnum and lnum > 0 and (mark_buf == 0 or mark_buf == cur_buf) then
       map[lnum] = ch
     end
   end
@@ -170,7 +176,8 @@ function M.build_mark_map()
   for _, ch in ipairs(M._recent_marks) do
     local pos = vim.fn.getpos("'" .. ch)
     local lnum = pos and pos[2] or 0
-    if lnum and lnum > 0 and not map[lnum] then
+    local mark_buf = pos and pos[1] or 0
+    if lnum and lnum > 0 and (mark_buf == 0 or mark_buf == cur_buf) and not map[lnum] then
       map[lnum] = ch
     end
   end
@@ -279,6 +286,42 @@ function M.slice_icon()
   return slice_icons[band]
 end
 
+--- Return the single-letter indicator for the current Vim mode.
+--- N=normal, I=insert, V=visual, O=operator-pending, C=command-line, etc.
+function M.mode_letter()
+  local mode = vim.fn.mode() -- e.g. "n", "i", "v", "V", "\22", "o", "c", "t", "R", "s"
+  local map = {
+    n = "N",
+    i = "I",
+    v = "V",
+    V = "V",
+    ["\22"] = "V", -- visual-block
+    o = "O",
+    c = "C",
+    t = "T",
+    R = "R",
+    r = "R",
+    s = "S",
+    S = "S",
+    ["\19"] = "S", -- select-block
+  }
+  return map[mode] or mode:upper()
+end
+
+--- Map a mark character (a-z / A-Z) to its Nerd Font (MDI alpha) icon.
+--- Lowercase `a` -> alpha-a-circle (U+F0BEC, stride 3), uppercase `A` ->
+--- alpha-a-circle-outline (U+F0BED, stride 3).
+--- Material Design Icons alpha-X-circle / alpha-X-circle-outline.
+function M.mark_icon(ch)
+  local b = ch:byte()
+  if b >= 97 and b <= 122 then -- a-z
+    return vim.fn.nr2char(0xF0BEC + (b - 97) * 3)
+  elseif b >= 65 and b <= 90 then -- A-Z
+    return vim.fn.nr2char(0xF0BED + (b - 65) * 3)
+  end
+  return ch
+end
+
 -- =============================================================================
 --  statuscol segment functions
 -- =============================================================================
@@ -299,7 +342,7 @@ function M.gutter_segment(args)
   local lnum = args.lnum
   local cursor = vim.fn.line(".")
   local mark = M.build_mark_map()[lnum]
-  local markstr = mark and mark or " "
+  local markstr = mark and M.mark_icon(mark) or " "
 
   -- Wrapped continuation lines: orange `┠`, matching the current-line accent
   -- (so current and non-current wrapped lines share the same color).
@@ -319,7 +362,7 @@ function M.gutter_segment(args)
         .. "%#StatusColumnSearchCap#"
         .. "%#StatusColumnSearch#" .. markstr
         .. "%#StatusColumnSearch#" .. "  "
-        .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.slice_icon() .. " "
+        .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.mode_letter() .. " "
     end
     -- Normal (no search): same as search line but NO counter and NO jump
     -- label — just mark + cap/slice suffix with 3-char spacing.
@@ -327,7 +370,7 @@ function M.gutter_segment(args)
       .. "%#StatusColumnSearchCap#"
       .. "%#StatusColumnSearch#" .. markstr
       .. "%#StatusColumnSearch#   "
-      .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.slice_icon() .. " "
+      .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.mode_letter() .. " "
   end
 
   -- Non-current line:  SP SP MARK SP LABEL ┃ SP

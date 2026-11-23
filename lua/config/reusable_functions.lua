@@ -178,6 +178,9 @@ end
 --- This is the existing `f` mapping extracted verbatim.
 function M.flash_jump_f()
   vim.cmd("normal! m'")
+  -- Record the pre-jump position in the global ring (so C-o returns here).
+  local ok, jump = pcall(require, "config.jumplist")
+  if ok and jump and jump.push then jump.push() end
 
   require("flash").jump({
     action = function(match, state)

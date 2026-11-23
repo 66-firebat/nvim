@@ -33,8 +33,8 @@ local function ensure_highlights()
     StatusColumnCurrent = { fg = "#ff4400", bg = "#2b2b2b" },
     -- non-current labels: muted grey
     StatusColumnLabel = { fg = "#8c8c8c", bg = "#2b2b2b" },
-    -- the `┣` / `┃` separator
-    StatusColumnBorder = { fg = "#444444", bg = "#2b2b2b" },
+    -- the `▏` separator (non-current lines)
+    StatusColumnBorder = { fg = "#ff4400", bg = "none" },
     StatusColumnBorderBump = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
     -- search-instance counter
     StatusColumnSearch = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
@@ -236,9 +236,11 @@ function M.search_instance()
     return nil
   end
 
-  -- Right-aligned 3-char (Emacs: "1".."99+"), padded.
+  -- Always a fixed 3-char string, so the search layout width never changes.
+  -- Rightmost slot is "+" when >99 matches, otherwise a space (Emacs
+  -- sc--search-instance-str pads to width 3).
   local s = found > 99 and "99+" or tostring(found)
-  return vim.trim(s) -- caller pads to 3 wide
+  return s:gsub("^.*$", function(x) return ("   " .. x):sub(-3) end)
 end
 
 -- =============================================================================
@@ -303,22 +305,19 @@ function M.gutter_segment(args)
       -- The leading glyph is the Powerline "media-playlist-speed"-style PUA
       -- char U+E0D6 (rendered as the orange lead, NOT a plain space/block).
       local padded = inst
-      if #inst < 2 then padded = " " .. inst end
       return "%#StatusColumnSearchLead# "
         .. "%#StatusColumnSearchCap#"
         .. "%#StatusColumnSearch#" .. markstr
         .. "%#StatusColumnSearch#" .. padded
         .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.slice_icon() .. " "
     end
-
-    -- Normal:  SP SP MARK SP ICON SP ┣ SP
-    local icon = M.jump_active and "󰠠" or M.slice_icon()
-    return "%#StatusColumnCurrent#  "
-      .. "%#StatusColumnCurrent#" .. markstr
-      .. "%#StatusColumnCurrent# "
-      .. "%#StatusColumnCurrent#" .. icon
-      .. "%#StatusColumnCurrent# "
-      .. "%#StatusColumnBorderBump#┣ "
+    -- Normal (no search): mirror the search-active line's colors/components
+    -- (lead cap, mark, cap+slice suffix) but replace the counter with 3 spaces.
+    return "%#StatusColumnSearchLead# "
+      .. "%#StatusColumnSearchCap#"
+      .. "%#StatusColumnSearch#" .. markstr
+      .. "%#StatusColumnSearch#   "
+      .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.slice_icon() .. " "
   end
 
   -- Non-current line:  SP SP MARK SP LABEL │ SP
@@ -362,6 +361,8 @@ function M.jump()
 
   -- Record current position to the jumplist (so C-o returns here).
   vim.cmd("normal! m'")
+  local ok, jump = pcall(require, "config.jumplist")
+  if ok and jump and jump.push then jump.push() end
 
   -- Invert: label -> lnum.
   local by_label = {}

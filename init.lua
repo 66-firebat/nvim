@@ -13,6 +13,8 @@ require("core.lazy")
 require("config.options")
 require("config.keymaps")
 require("config.autocmds")
+-- Global persisted jump ring (C-o/C-i) + its VimEnter/VimLeavePre hooks.
+require("config.jumplist").setup()
 
 -- designates the pynvim provider to be used based on a shell variable IF a shell variable exists. This allows nvim to reference a different python executable when in a nix shell that defines the python3_host_prog environment variable
 if vim.env.python3_host_prog then

@@ -38,7 +38,7 @@ local GROUPS = {
   },
   FileMgr = { "oil" },
   Docs = { "markdown", "text", "org", "rst", "latex", "tex" },
-  Config = { "conf", "dotenv", "toml", "ini", "gitcommit", "gitrebase" },
+  Config = { "conf", "dotenv", "toml", "ini", "gitcommit", "gitrebase", "hjson", "json5", "jsonc" },
   Terminal = { "terminal" },
   Broot = { "broot" },
   Tools = { "help", "fugitive", "fugitiveblame", "diff", "git", "man", "qf" },
@@ -181,16 +181,20 @@ local function tab_label(bufnr, selected)
   return highlight(hl, label)
 end
 
---- Overflow icon (Emacs my/ct--overflow-str).
-local overflow_icons = { " ", "󰲠", "󰲢", "󰲤", "󰲦", "󰲨", "󰲪", "󰲬", "󰲮", "󰲰", "󰲲" }
+--- Overflow icon (Emacs my/ct--overflow-str + my/ct--overflow-icons).
+--- Maps a count 1..10+ to the Nerd Font glyph (1->󰲠, 2->󰲢, ..., 9->󰲰, 10+->󰲲).
+--- 1-indexed: index 1 = count 1, etc.
+local overflow_icons = { "󰲠", "󰲢", "󰲤", "󰲦", "󰲨", "󰲪", "󰲬", "󰲮", "󰲰", "󰲲" }
 local function overflow_str(n)
-  return " " .. (overflow_icons[math.min(n, 10)] or overflow_icons[10])
+  local idx = math.min(math.max(n, 1), 10)
+  return " " .. (overflow_icons[idx] or overflow_icons[10])
 end
 
---- Group icon + line-number segment (Emacs my/ct--group-icon).
---- The leading icon is the overflow glyph 󰲠 (replaces the per-group icon).
-local function group_icon_segment(group, lnum)
-  local icon = "󰲠"
+--- Group icon + line-number segment.
+--- The leading glyph is the overflow glyph for the NUMBER OF BUFFERS in the
+--- current group (1->󰲠, 2->󰲢, ..., 9->󰲰, 10+->󰲲), matching Emacs MRU-tabs.el.
+local function group_icon_segment(group, count, lnum)
+  local icon = overflow_icons[math.min(math.max(count, 1), 10)] or overflow_icons[10]
   local line_str = tostring(lnum)
   -- 6-char hyphen-padded (Emacs pads to 6 with hyphens).
   local padded = line_str
@@ -235,7 +239,8 @@ local function render(winid)
   end
 
   local win_width = vim.api.nvim_win_get_width(winid)
-  local icon_str = group_icon_segment(group, lnum)
+  local icon_str = group_icon_segment(group, #buf_list, lnum)
+  M._last_debug = { winid = winid, bufnr = bufnr, group = group, mru = { unpack(buf_list) }, n = #buf_list }
   -- Append the CURRENT file's icon right after the line-number segment (before
   -- the first tab's powerline lead).
   local ficon = current_file_icon(bufnr)
@@ -397,6 +402,22 @@ end
 function M._render()
   local winid = vim.api.nvim_get_current_win()
   return render(winid)
+end
+
+--- Diagnostic: dump the buffers in the current group (run
+--- `:lua require('config.tabs').debug_group()`).
+function M.debug_group()
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    local name = vim.api.nvim_buf_get_name(b)
+    print(string.format("buf=%d listed=%s loaded=%s ft=%q group=%s name=%s",
+      b, tostring(vim.bo[b].buflisted), tostring(vim.api.nvim_buf_is_loaded(b)),
+      vim.bo[b].filetype, group_for_buffer(b), name))
+  end
+  if M._last_debug then
+    print(string.format("RENDER: win=%d bufnr=%d group=%s n=%d mru=%s",
+      M._last_debug.winid, M._last_debug.bufnr, M._last_debug.group,
+      M._last_debug.n, vim.inspect(M._last_debug.mru)))
+  end
 end
 
 return M

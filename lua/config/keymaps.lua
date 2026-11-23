@@ -1,5 +1,17 @@
--- Add 'nowait' so it fires immediately even if other maps exist
--- local opts = { noremap = true, silent = true, nowait = true }
+-- =============================================================================
+--  keymaps.lua — key bindings ONLY
+--
+--  This file contains ONLY `vim.keymap.set(...)` bind lines.  Every custom Lua
+--  function lives in `lua/config/reusable_functions.lua` (module `M`), plus the
+--  dedicated modules `statuscolumn.lua`, `jumplist.lua`, and `tabs.lua`.
+--
+--  To bind a new function, require it here and add a bind line; do NOT inline
+--  function bodies.
+-- =============================================================================
+
+-- Reusable general-purpose functions.
+local M = require("config.reusable_functions")
+
 local opts = { noremap = true, silent = true }
 local map = vim.keymap.set
 
@@ -8,9 +20,9 @@ local map = vim.keymap.set
 -- map("n", "<leader>q", ":q!<CR>", opts)
 
 -- 't' will perform the BUILT-IN 'f' behavior, ignoring any other 'f' maps
-vim.keymap.set({'n', 'x', 'o'}, 't', 'f', { remap = false, desc = 'Built-in forward search' })
+vim.keymap.set({ "n", "x", "o" }, "t", "f", { remap = false, desc = "Built-in forward search" })
 -- 'T' will perform the BUILT-IN 'F' behavior
-vim.keymap.set({'n', 'x', 'o'}, 'T', 'F', { remap = false, desc = 'Built-in backward search' })
+vim.keymap.set({ "n", "x", "o" }, "T", "F", { remap = false, desc = "Built-in backward search" })
 
 -- Remap for dealing with visual line wraps
 map("n", "k", "v:count == 0 ? 'gk' : 'k'", { expr = true })
@@ -25,13 +37,7 @@ map("v", "p", '"_dp')
 map("v", "P", '"_dP')
 
 -- copy everything between { and } including the brackets
--- p puts text after the cursor,
--- P puts text before the cursor.
 map("n", "YY", "va{Vy", opts)
-
--- Move line on the screen rather than by line in the file
--- map("n", "j", "gj", opts)
--- map("n", "k", "gk", opts)
 
 -- Move to start/end of line
 map({ "n", "x", "o" }, "H", "^", opts)
@@ -43,22 +49,12 @@ map("n", "_", ":vertical resize -5<CR>")
 map("n", "=", ":resize +5<CR>")
 map("n", "-", ":resize -5<CR>")
 
--- Map enter to ciw in normal mode
--- map("n", "<CR>", "ciw", opts)  -- Commented out: This overwrites word on Enter - too disruptive
--- map("n", "<BS>", "ci", opts)   -- Commented out: This changes text on Backspace - too disruptive
-
 map("n", "n", "nzz", opts)
 map("n", "N", "Nzz", opts)
 map("n", "*", "*zzv", opts)
 map("n", "#", "#zzv", opts)
 map("n", "g*", "g*zz", opts)
 map("n", "g#", "g#zz", opts)
-
--- map ; to resume last search
--- map("n", ";", "<cmd>Telescope resume<cr>", opts)
-
--- search current buffer
--- map("n", "<C-s>", ":Telescope current_buffer_fuzzy_find<CR>", opts)
 
 -- Split line with X
 map("n", "X", ":keeppatterns substitute/\\s*\\%#\\s*/\\r/e <bar> normal! ==^<cr>", { silent = true })
@@ -67,254 +63,83 @@ map("n", "X", ":keeppatterns substitute/\\s*\\%#\\s*/\\r/e <bar> normal! ==^<cr>
 map("n", "<C-a>", "ggVG", opts)
 
 -- write file in current directory
--- :w %:h/<new-file-name>
 map("n", "<C-n>", ":w %:h/", opts)
-
-
-
-
-
--- delete forward
--- w{number}dw
--- delete backward
--- w{number}db
-
--- map("n", "<C-P>", ':lua require("config.utils").toggle_go_test()<CR>', opts)
 
 -- Get highlighted line numbers in visual mode
 map("v", "<leader>ln", ':lua require("config.utils").get_highlighted_line_numbers()<CR>', opts)
 
-map('n', '<leader>rl', function()
-  vim.cmd('w')
-  vim.cmd('SlimeSendCurrentLine')
-end, { desc = '[vim-slime]: send current line' })
+map("n", "<leader>rl", function()
+  vim.cmd("w")
+  vim.cmd("SlimeSendCurrentLine")
+end, { desc = "[vim-slime]: send current line" })
 
-map('n', '<leader>L', ':cd %:h<CR>', {
-  desc = '[L]ocate file in system'
+map("n", "<leader>L", ":cd %:h<CR>", {
+  desc = "[L]ocate file in system",
 })
 
--- The function that will be called by the keymap.
--- local function open_tmux_terminal()
---   -- The command to open a terminal and run the 'tmux' command.
---   -- `:terminal` opens a new terminal in a horizontal split.
---   local cmd_string = 'terminal tmux'
---   
---   -- We use vim.cmd() to execute the command directly.
---   vim.cmd(cmd_string)
--- end
-
--- The function that will be called by the keymap.
--- local function open_tmux_vsplit()
---   -- The command to open a terminal in a vertical split (`vsplit`)
---   -- and then run the tmux command.
---   -- `tmux attach || tmux new-session` will attach to an existing session
---   -- or create a new one if none exists.
---   local cmd_string = 'vsplit | terminal tmux attach || tmux new-session'
---   
---   -- We use vim.cmd() to execute the command directly.
---   vim.cmd(cmd_string)
--- end
-
---[[ map('n', '<leader>T', open_tmux_vsplit, {
-  desc = 'Windowed Tmux'
-}) ]]
-
--- New keymap to open a vsplit terminal, start tmux, and run Julia.
-local function open_julia_terminal()
-  local cmd_string = 'vsplit | terminal tmux new-session -A -s julia_session'
-  vim.cmd(cmd_string)
-end
--- map('n', '<leader>J', open_julia_terminal, {
---   desc = 'Open Julia in a vertical split terminal with tmux'
--- })
-
-
--- Send motion (paragraph) to Slime, and move the cursor to the end of the paragraph
-map('n', '<leader>rr', '<Plug>SlimeMotionSend}}', {
-    silent = true,
-    desc = '[vim-slime]: send motion "}" '
+-- Send motion (paragraph) to Slime, and move the cursor to the end of it
+map("n", "<leader>rr", "<Plug>SlimeMotionSend}}", {
+  silent = true,
+  desc = '[vim-slime]: send motion "}" ',
 })
-
 
 -- FILE MANAGEMENT
 -- map('n', '<leader>e', "<cmd>Fyler<cr>", { desc = 'Open Oil' })
 
--- Open broot in a terminal
-local function open_broot()
-  
-  -- Change directory to the current file's directory (assuming this is desired)
-  local status, _ = pcall(vim.cmd, 'cd %:h')
-  if not status then
-    vim.cmd('terminal broot ~')
-  end
+-- Open broot in a terminal (commented out; oil is the active file manager)
+-- map("n", "<M-e>", M.open_broot, { desc = "open broot" })
 
-  local cmd_string = 'terminal broot'
-  -- Use pcall to execute the main command and check for errors
-  local status, _ = pcall(vim.cmd, cmd_string)
-  -- If status is false, an error occurred, so run the fallback command
-  if not status then
-    vim.cmd('terminal broot ~')
-  end
+-- Open Oil (writable file manager)
+map("n", "<M-e>", M.open_oil, { desc = "open oil" })
 
-  -- This command runs regardless of the success of the terminal broot command
-  vim.cmd('startinsert')
-end
-
-local function open_oil()
-  local cmd_string = 'Oil'
-  -- Use pcall to execute the main command and check for errors
-  local status, _ = pcall(vim.cmd, cmd_string)
-  -- If status is false, an error occurred, so run the fallback command
-  if not status then
-    vim.cmd('terminal Oil ~')
-  end
-end
--- map('n', '<M-e>', open_broot, { desc = 'open broot' })
-map('n', '<M-e>', open_oil, { desc = 'open oil' })
-
--- Simple exact-word search on Shift+S
-vim.keymap.set("n", "S", function()
-  local q = vim.fn.input("Exact Pattern: \\< ...\\>")
-  if q == "" then return end
-  -- escape slash so the search pattern won't break if you type '/'
-  q = vim.fn.escape(q, "/")
-  -- put the exact-word pattern into the search register
-  vim.fn.setreg("/", "\\<" .. q .. "\\>")
-  -- jump to next match and enable highlighting
-  vim.cmd("silent! normal! n")
-  vim.o.hlsearch = true
-end, { noremap = true, silent = true, desc = "Exact word search (prompt)" })
-
--- paste one line below with "put"
--- map('n', '<C-p>', function()
---   vim.cmd('put')
--- end, { desc = 'put' })
-
--- paste one line above with "0put"
--- map('n', '<C-M-p>', function()
---   vim.cmd('.-1put')
--- end, { desc = 'put' })
+-- Exact-word search on Shift+S
+map("n", "S", M.exact_word_search, { desc = "Exact word search (prompt)" })
 
 -- Open a terminal from the current Oil directory (oil buffer only)
-map('n', '<leader>cd', function()
-  local dir = require("oil").get_current_dir()
-  if dir then
-    local cmd = string.format('cd %s && exec $SHELL', vim.fn.shellescape(dir))
-    vim.cmd('terminal ' .. cmd)
-  else
-    print("Not in an Oil buffer")
-  end
-end, { desc = '[oil]: open terminal in current directory' })
+map("n", "<leader>cd", M.oil_open_terminal, { desc = "[oil]: open terminal in current directory" })
 
 -- Delete word using CTRL+BKSPC
-map('n', '<C-BS>', 'diw', { noremap = true, silent = true })
-
---  Move blocks horizontally (left/right)
--- vim.keymap.set('v', '<C-h>', ':MoveHBlock(-1)<CR>', opts)
--- vim.keymap.set('v', '<C-l>', ':MoveHBlock(1)<CR>', opts)
+map("n", "<C-BS>", "diw", { noremap = true, silent = true })
 
 -- Keep cursor centered when scrolling
 map("n", "<C-d>", "<C-d>zz", opts)
 map("n", "<C-u>", "<C-u>zz", opts)
 
--- Move selected line / block of text in visual mode
--- map("v", "J", ":m '>+1<CR>gv=gv", opts)
--- vim.keymap.set('v', '<C-k>', ':MoveBlock(-1)<CR>', opts)
--- map("v", "K", ":m '<-2<CR>gv=gv", opts)
--- vim.keymap.set('v', '<C-j>', ':MoveBlock(1)<CR>', opts)
-
--- nvim-gomove bindings
--- map( "x", "<C-h>", "<Plug>GoVMBlockLeft", {} )
--- map( "x", "<C-j>", "<Plug>GoVMBlockDown", {} )
--- map( "x", "<C-k>", "<Plug>GoVMBlockUp", {} )
--- map( "x", "<C-l>", "<Plug>GoVMBlockRight", {} )
-
--- Move selected line down (J)) and up (K)
+-- Move selected line down (J) and up (K)
 map("v", "J", ":m '>+1<CR>gv=gv", opts)
 map("v", "K", ":m '<-2<CR>gv=gv", opts)
 
--- map( "n", "<C-j>", "<Plug>GoNMLineDown", {} )
--- map( "n", "<C-k>", "<Plug>GoNMLineUp", {} )
--- map( "n", "<C-h>", "<Plug>GoNMLineLeft", {} )
--- map( "n", "<C-l>", "<Plug>GoNMLineRight", {} )
-
--- vim.keymap.set({ "n", "x", "o" }, "f", function()
---     vim.cmd("normal! m'")
---     require('flash').jump()
--- end, { desc = "Flash Jump (with jump mark)" })
-
 -- Sets flash utility to f key and saves position to the jump list
-vim.keymap.set({ "n", "x", "o" }, "f", function()
-    vim.cmd("normal! m'")
-    
-    require('flash').jump({
-        action = function(match, state)
-            -- 1. Update the search register with the pattern
-            vim.fn.setreg("/", state.pattern.pattern)
-            
-            -- 2. Move the cursor to the match position
-            vim.api.nvim_win_set_cursor(match.win, { match.pos[1], match.pos[2] })
-            
-            -- 3. Add it to the search history so it shows up in q/
-            vim.fn.histadd("search", state.pattern.pattern)
-            
-            -- 4. Clean up the flash state
-            state:hide()
-        end
-    })
-end, { desc = "Flash Jump (Search Sync Fixed)" })
-
--- toggle julia LSP on/off
--- vim.keymap.set('n', '<leader>tj', function()
---     local clients = vim.lsp.get_clients({ bufnr = 0, name = "julials" })
---     
---     if #clients > 0 then
---         -- If running, stop it
---         for _, client in ipairs(clients) do
---             vim.lsp.stop_client(client.id)
---         end
---         print("Julia LSP Stopped")
---     else
---         -- If not running, start it
---         vim.cmd("LspStart julials")
---         print("Julia LSP Started")
---     end
--- end, { desc = "Toggle Julia LSP" })
+vim.keymap.set({ "n", "x", "o" }, "f", M.flash_jump_f, { desc = "Flash Jump (Search Sync Fixed)" })
 
 -- Disable any LSP in the current buffer
-vim.keymap.set('n', '<leader>lx', function()
-    -- Get all clients attached to the current buffer
-    -- Note: vim.lsp.get_clients is preferred for Neovim 0.10+
-    local clients = vim.lsp.get_clients({ bufnr = 0 })
-    if #clients == 0 then
-        print("No active LSP clients to stop.")
-        return
-    end
-
-    local client_names = {}
-    for _, client in ipairs(clients) do
-        table.insert(client_names, client.name)
-        -- Stop the individual client
-        vim.lsp.stop_client(client.id)
-    end
-
-    print("Stopped LSP client(s): " .. table.concat(client_names, ", "))
+vim.keymap.set("n", "<leader>lx", function()
+  local clients = vim.lsp.get_clients({ bufnr = 0 })
+  if #clients == 0 then
+    print("No active LSP clients to stop.")
+    return
+  end
+  local client_names = {}
+  for _, client in ipairs(clients) do
+    table.insert(client_names, client.name)
+    vim.lsp.stop_client(client.id)
+  end
+  print("Stopped LSP client(s): " .. table.concat(client_names, ", "))
 end, { desc = "Stop LSP for current buffer with info" })
 
-
--- Remap \ to repeat search (;). Placed 
+-- Remap \ to repeat search (;)
 vim.keymap.set({ "n", "x", "o" }, "\\", ";", { noremap = true, desc = "Repeat last f/t/F/T search" })
--- Use vai to jump to a location rendered by labels in the statusline
-vim.keymap.set({"n", "x", "v"}, ";", function()
-  -- Record current position to jumplist
+
+-- Use the static single-char labels to jump to a line in the statuscolumn.
+-- (Replaces the old vai.nvim jump; see lua/config/statuscolumn.lua)
+vim.keymap.set({ "n", "x", "v" }, ";", function()
   vim.cmd("normal! m'")
-  require("vai.jump").start()
-end, { noremap = true, desc = "[vai]: toggle line jump" })-- require("lualine").setup({
+  require("config.statuscolumn").jump()
+end, { noremap = true, desc = "[statuscolumn]: static-label line jump" })
 
 -- Jumps to marks (respecting mark column positions)
-vim.keymap.set('n', "'", "`", { desc = "Jump to exact mark column" })
-vim.keymap.set('n', '"', "'", { desc = "Jump to mark line start" })
-
+vim.keymap.set("n", "'", "`", { desc = "Jump to exact mark column" })
+vim.keymap.set("n", '"', "'", { desc = "Jump to mark line start" })
 
 -- Pipes zoxide output to an oil buffer
 vim.keymap.set("n", "<M-f>", function()
@@ -324,7 +149,7 @@ vim.keymap.set("n", "<M-f>", function()
       height = 0.6,
       width = 0.8,
       style = "terminal",
-      border = "single"
+      border = "single",
     },
   })
 
@@ -345,59 +170,36 @@ vim.keymap.set("n", "<M-f>", function()
 end)
 
 -- Exit terminal mode and go to the next buffer
-vim.keymap.set('t', '<C-h>', [[<Cmd>bprevious<CR>]], { desc = "Terminal previous buffer" })
-vim.keymap.set('t', '<C-l>', [[<Cmd>bnext<CR>]], { desc = "Terminal next buffer" })
-vim.keymap.set('t', '<C-;>', [[<C-\><C-n>]], { desc = "Exit terminal mode" })
+vim.keymap.set("t", "<C-h>", [[<Cmd>bprevious<CR>]], { desc = "Terminal previous buffer" })
+vim.keymap.set("t", "<C-l>", [[<Cmd>bnext<CR>]], { desc = "Terminal next buffer" })
+vim.keymap.set("t", "<C-;>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
 
 -- Navigate buffers without centering the cursor
-vim.keymap.set('n', '<C-l>', [[<Cmd>bnext<CR>]], opts)
-vim.keymap.set('n', '<C-h>', [[<Cmd>bprevious<CR>]], opts)
+vim.keymap.set("n", "<C-l>", [[<Cmd>bnext<CR>]], opts)
+vim.keymap.set("n", "<C-h>", [[<Cmd>bprevious<CR>]], opts)
 
 -- Opens a vsplit terminal
-map('n', '<leader>tT', function()
-  vim.cmd('vsplit | terminal')
-end, {
-  desc = 'Windowed Tmux'
-})
+map("n", "<leader>tT", M.open_tmux_vsplit, { desc = "Windowed Tmux" })
 
 -- Opens a terminal on a separate buffer
-map('n', '<leader>tt', function()
-  vim.cmd('terminal')
-end, {
-  desc = 'Windowed Tmux'
-})
+map("n", "<leader>tt", M.open_tmux_terminal, { desc = "Windowed Tmux" })
 
--- Switch to alternate buffer, map to <leader> + Tab
-vim.keymap.set({'n', 't', 'i'}, '<C-b>', [[<Cmd>b#<CR>]], { desc = "Switch to alternate buffer" })
+-- Switch to alternate buffer
+vim.keymap.set({ "n", "t", "i" }, "<C-b>", [[<Cmd>b#<CR>]], { desc = "Switch to alternate buffer" })
 
 -- Snacks picker spell checker
 vim.keymap.set("n", "z=", function()
   local current_file = vim.api.nvim_buf_get_name(0)
-  
   Snacks.picker.spelling({
     ---@param item snacks.Picker.Item
     transform = function(item)
       item.file = current_file
       return item
     end,
-    -- Now that 'file' exists, you can use any previewer you like
     preview = "file",
-    layout = {
-      preset = "vertical",
-    }
+    layout = { preset = "vertical" },
   })
 end, { desc = "Spelling Suggestions with File Preview" })
 
--- Function to remove all buffers, except the current one, from the buffer list
-local function close_other_buffers()
-    local current_buf = vim.api.nvim_get_current_buf()
-    local buffers = vim.api.nvim_list_bufs()
-
-    for _, buf in ipairs(buffers) do
-        if buf ~= current_buf and vim.api.nvim_buf_is_loaded(buf) then
-            vim.api.nvim_buf_delete(buf, { force = false })
-        end
-    end
-end
-
-vim.keymap.set('n', '<leader>bo', close_other_buffers, { desc = 'Close all other buffers' })
+-- Close all other buffers
+vim.keymap.set("n", "<leader>bo", M.close_other_buffers, { desc = "Close all other buffers" })

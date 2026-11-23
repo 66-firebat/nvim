@@ -7,6 +7,8 @@ local nvim_set_hl = api.nvim_set_hl
 
 require("config.vimtex.config")
 require("config.highlight_groups.highlights")
+-- Panes parity (wrap/truncation glyph + divider color), port of emacs/panes.el
+require("config.reusable_functions").setup_pane_glyphs()
 -- Set up LSP servers
 require("config.lsp.luals")
 -- require("config.lsp.pylsp")
@@ -32,7 +34,7 @@ vim.opt.conceallevel = 0				-- so that `` is visible in markdown files
 vim.opt.fileencoding = "utf-8"				-- the encoding written to a file
 vim.opt.hlsearch = true					-- highlight all matches on previous search pattern
 vim.opt.ignorecase = true				-- ignore case in search patterns
-vim.opt.mouse = "a"					-- allow the mouse to be used in neovim
+vim.opt.mouse = ""					-- disable the mouse completely
 vim.opt.pumheight = 10					-- pop up menu height
 vim.opt.showmode = false				-- we don't need to see things like -- INSERT -- anymore
 

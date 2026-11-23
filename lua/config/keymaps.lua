@@ -15,6 +15,11 @@ local M = require("config.reusable_functions")
 local opts = { noremap = true, silent = true }
 local map = vim.keymap.set
 
+-- Global jump ring (C-o back / C-i forward) — port of emacs/jumpring.el
+local jump = require("config.jumplist")
+vim.keymap.set("n", "<C-o>", jump.backward, { desc = "Jump back (jumplist)" })
+vim.keymap.set("n", "<C-i>", jump.forward, { desc = "Jump forward (jumplist)" })
+
 -- Fast saving and quitting
 -- map("n", "<leader>w", ":write!<CR>", { silent = false, desc = "Save file" })
 -- map("n", "<leader>q", ":q!<CR>", opts)

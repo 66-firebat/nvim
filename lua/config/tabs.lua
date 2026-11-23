@@ -171,8 +171,18 @@ local function render(winid)
   local lnum = vim.api.nvim_win_get_cursor(winid)[1]
 
   local buf_list = mru_group(group)
+  -- Always show the CURRENT buffer's tab, even if it isn't in the
+  -- visible_buffers() list (e.g. after C-o jumps into a scratch/unlisted
+  -- buffer).  This prevents the winbar from vanishing entirely.
+  local current_present = false
+  for _, b in ipairs(buf_list) do
+    if b == bufnr then current_present = true break end
+  end
+  if not current_present then
+    table.insert(buf_list, 1, bufnr)
+  end
   if #buf_list == 0 then
-    return ""
+    buf_list = { bufnr }
   end
 
   -- Ensure current buffer is most-recent in its group.
@@ -280,11 +290,27 @@ function M.setup()
 
   local group = vim.api.nvim_create_augroup("MRUTabs", { clear = true })
 
-  -- Re-render winbar on buffer/window changes.
-  vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter", "CursorMoved", "CursorMovedI", "TextChanged" }, {
+  -- Set winbar once per window (on enter).  The `%{...}` expression inside
+  -- the winbar re-evaluates _render() on every redraw automatically, so we do
+  -- NOT need to re-assign it on cursor moves / text changes.  We also skip
+  -- floating windows (snacks pickers, popups) because they have no room for a
+  -- winbar (that was the E36 "not enough room" source).
+  vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter", "WinNew" }, {
     group = group,
     callback = function()
       local winid = vim.api.nvim_get_current_win()
+      local cfg = vim.api.nvim_win_get_config(winid)
+      if cfg.relative and cfg.relative ~= "" then
+        -- Floating window: no winbar.
+        vim.wo[winid].winbar = ""
+        return
+      end
+      local height = vim.api.nvim_win_get_height(winid)
+      if height < 3 then
+        -- Too small for a meaningful winbar.
+        vim.wo[winid].winbar = ""
+        return
+      end
       vim.wo[winid].winbar = "%{%v:lua.require('config.tabs')._render()%}"
     end,
   })

@@ -302,11 +302,12 @@ function M.gutter_segment(args)
       --   SP  󰃖(U+E0D6) MARK search(3) ┣ SP
       -- The leading glyph is the Powerline "media-playlist-speed"-style PUA
       -- char U+E0D6 (rendered as the orange lead, NOT a plain space/block).
-      local padded = ("  " .. inst):sub(-2)
+      local padded = inst
+      if #inst < 2 then padded = " " .. inst end
       return "%#StatusColumnSearchLead# "
         .. "%#StatusColumnSearchCap#"
         .. "%#StatusColumnSearch#" .. markstr
-        .. "%#StatusColumnSearch#" .. padded .. " "
+        .. "%#StatusColumnSearch#" .. padded
         .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.slice_icon() .. " "
     end
 
@@ -335,7 +336,7 @@ function M.gutter_segment(args)
     .. markhl .. markstr
     .. "%#StatusColumnLabel# "
     .. "%#StatusColumnLabel#" .. trimmed
-    .. "%#StatusColumnBorder#│ "
+    .. "%#StatusColumnBorder#▏ "
 end
 
 -- =============================================================================

@@ -112,24 +112,28 @@ M.search_active = false
 -- =============================================================================
 
 --- Build the static label map: { [lnum] = "<label>", ... } for the current
---- window, assigned strictly top-to-bottom starting at the first visible line.
---- The cursor line is NOT labelled (it shows the number or search counter).
---- Emacs: `sc--make-pairs` over visible BOLs in order.
+--- window.  Labels are assigned by ABSOLUTE offset from the first visible line
+--- (label = index of `lnum - first`), so they are PERMANENT per line and never
+--- shift when the cursor moves.  The cursor line gets a label too, but it is
+--- simply not displayed (the current-line branch handles it separately).
+--- Emacs: `sc--make-pairs` over visible BOLs in order (no cursor skip).
 function M.build_label_map()
   local win = vim.api.nvim_get_current_win()
   local first = vim.fn.line("w0", win) or 1
   local last = vim.fn.line("w$", win) or first
-  local cursor = vim.api.nvim_win_get_cursor(win)[1]
 
   local map = {}
-  local idx = 0
   for lnum = first, last do
-    if lnum ~= cursor then
-      map[lnum] = padded_label(idx, 2) -- 2-wide so punctuation + spacing aligns
-      idx = idx + 1
-    end
+    map[lnum] = padded_label(lnum - first, 2)
   end
   return map
+end
+
+--- Return the static label a line has in top-to-bottom order (absolute offset
+--- from the first visible line).  Same as the entry in `build_label_map`.
+function M.label_for(lnum)
+  local first = vim.fn.line("w0", 0) or 1
+  return padded_label(lnum - first, 2)
 end
 
 -- =============================================================================
@@ -237,10 +241,11 @@ function M.search_instance()
   end
 
   -- Always a fixed 3-char string, so the search layout width never changes.
-  -- Rightmost slot is "+" when >99 matches, otherwise a space (Emacs
-  -- sc--search-instance-str pads to width 3).
+  -- Rightmost slot is "+" when >99 matches, otherwise the number is
+  -- left-justified within a 3-char field (trailing spaces) — Emacs
+  -- sc--search-instance-str pads AFTER the number, not before.
   local s = found > 99 and "99+" or tostring(found)
-  return s:gsub("^.*$", function(x) return ("   " .. x):sub(-3) end)
+  return (s .. "   "):sub(1, 3)
 end
 
 -- =============================================================================
@@ -310,15 +315,14 @@ function M.gutter_segment(args)
       --   SP  󰃖(U+E0D6) MARK search(3) ┣ SP
       -- The leading glyph is the Powerline "media-playlist-speed"-style PUA
       -- char U+E0D6 (rendered as the orange lead, NOT a plain space/block).
-      local padded = inst
       return "%#StatusColumnSearchLead# "
         .. "%#StatusColumnSearchCap#"
         .. "%#StatusColumnSearch#" .. markstr
-        .. "%#StatusColumnSearch#" .. padded
+        .. "%#StatusColumnSearch#" .. "  "
         .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.slice_icon() .. " "
     end
-    -- Normal (no search): mirror the search-active line's colors/components
-    -- (lead cap, mark, cap+slice suffix) but replace the counter with 3 spaces.
+    -- Normal (no search): same as search line but NO counter and NO jump
+    -- label — just mark + cap/slice suffix with 3-char spacing.
     return "%#StatusColumnSearchLead# "
       .. "%#StatusColumnSearchCap#"
       .. "%#StatusColumnSearch#" .. markstr
@@ -326,13 +330,16 @@ function M.gutter_segment(args)
       .. "%#StatusColumnCap#" .. "%#StatusColumnSlice#" .. M.slice_icon() .. " "
   end
 
-  -- Non-current line:  SP SP MARK SP LABEL │ SP
+  -- Non-current line:  SP SP MARK SP LABEL ┃ SP
   local labels = M.build_label_map()
   local label = labels[lnum] or "  "
   local trimmed = vim.trim(label)
-  -- Pad single-char labels with a trailing space so all labels occupy 2 cells
-  -- (mirrors Emacs sc--lab-str's "pad to width" behaviour).
-  if #trimmed == 1 then
+  -- Ensure the label always occupies 2 display cells, even when empty, so the
+  -- `┃` separator stays aligned across label/no-label lines.  Single-char
+  -- labels get a trailing space; empty labels keep their leading 2 spaces.
+  if trimmed == "" then
+    trimmed = "  "
+  elseif #trimmed == 1 then
     trimmed = trimmed .. " "
   end
 

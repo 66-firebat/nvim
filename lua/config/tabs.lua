@@ -80,29 +80,10 @@ local function group_icon(group)
 end
 
 --- Return the icon for the CURRENT buffer's filetype (via nvim-web-devicons).
---- Register custom filetype icons with nvim-web-devicons (run once).
-local devicons_configured = false
-local function ensure_devicons_icons()
-  if devicons_configured then
-    return
-  end
-  devicons_configured = true
-  local ok, dev = pcall(require, "nvim-web-devicons")
-  if not ok or not dev or not dev.setup then
-    return
-  end
-  dev.setup({
-    override_by_extension = {
-      hjson = { icon = "󰘓", color = "#ff4400", name = "Hjson" },
-      -- Add more custom filetypes here, e.g.:
-      -- yaml  = { icon = "", color = "#ff4400", name = "Yaml" },
-      -- toml  = { icon = "", color = "#ff4400", name = "Toml" },
-    },
-  })
-end
-
+--- Return the icon for the current buffer's filetype, with a generic fallback
+--- for unknown filetypes.  Custom icons (e.g. .hjson) are registered in
+--- lua/plugins/nvim-web-devicons.lua.
 local function current_file_icon(bufnr)
-  ensure_devicons_icons()
   local ok, dev = pcall(require, "nvim-web-devicons")
   if not ok or not dev or not dev.get_icon then
     return "" -- generic file icon fallback

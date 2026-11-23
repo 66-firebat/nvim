@@ -72,17 +72,17 @@ local punct = {
   ";", "<", ">", "?", "/", "~",
 }
 
---- Map a lowercase letter a-z to its SQUARED Nerd Font icon
---- (MDI alpha-X-box, U+F0B08 stride 1).  Non-letters are returned unchanged.
+--- Map a lowercase letter a-z to its CIRCLED Nerd Font icon
+--- (MDI alpha-X-circle, U+F0BEC stride 3).  Non-letters are returned unchanged.
 local function encircle(ch)
   local b = ch:byte()
   if b and b >= 97 and b <= 122 then
-    return vim.fn.nr2char(0xF0B08 + (b - 97))
+    return vim.fn.nr2char(0xF0BEC + (b - 97) * 3)
   end
   return ch
 end
 
---- Convert a raw (padded) jump label into its DISPLAY form, squaring any
+--- Convert a raw (padded) jump label into its DISPLAY form, circling any
 --- lowercase letters but leaving spaces/punctuation/multi-char padding intact.
 function M.display_label(raw)
   return (raw:gsub("[a-z]", encircle))
@@ -337,7 +337,7 @@ function M.mode_letter()
   return map[mode] or mode
 end
 
---- Map a mark character (a-z / A-Z) to its Nerd Font (MDI alpha) icon.
+--- Map a mark character (a-z / A-Z) to its CIRCLED Nerd Font (MDI alpha) icon.
 --- Lowercase `a` -> alpha-a-circle (U+F0BEC, stride 3), uppercase `A` ->
 --- alpha-a-circle-outline (U+F0BED, stride 3).
 --- Material Design Icons alpha-X-circle / alpha-X-circle-outline.

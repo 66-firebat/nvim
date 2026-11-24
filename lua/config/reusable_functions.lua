@@ -401,18 +401,49 @@ local function push_jump()
   end
 end
 
---- Fuzzy-search the current buffer's lines, seed the `/` register.
---- Emacs: `s` -> `my/consult-line-with-jump`
-function M.search_line_jump()
-  push_jump()
-  Snacks.picker.lines()
+--- Seed the shared `/` register + search history so `n`/`N`/`*`/`#` and the
+--- statuscolumn search-instance counter all use the same pattern.
+--- Emacs: `isearch-update-ring` + `evil-regexp-search`.
+local function seed_search(query)
+  if not query or query == "" then
+    return
+  end
+  -- Escape nothing: the user typed a plain/fuzzy query; use it literally.
+  vim.fn.setreg("/", vim.pesc(query))
+  vim.fn.histadd("search", query)
+  vim.o.hlsearch = true
 end
 
---- Ripgrep the project (root = cwd), seed the `/` register.
---- Emacs: `S` -> `my/consult-ripgrep-with-jump`
+--- Fuzzy-search the current buffer's lines, seed the `/` register from the
+--- typed query (on picker close).  Emacs: `s` -> `my/consult-line-with-jump`.
+function M.search_line_jump()
+  push_jump()
+  Snacks.picker.lines({
+    on_close = function(picker)
+      local q = picker.input and picker.input.filter and picker.input.filter.search
+      seed_search(q)
+    end,
+  })
+end
+
+--- Ripgrep the project (root = cwd), seed the `/` register from the typed query
+--- (on picker close).  Emacs: `S` -> `my/consult-ripgrep-with-jump`.
 function M.search_ripgrep_jump()
   push_jump()
-  Snacks.picker.grep({ cwd = vim.fn.getcwd() })
+  Snacks.picker.grep({
+    cwd = vim.fn.getcwd(),
+    on_close = function(picker)
+      local q = picker.input and picker.input.filter and picker.input.filter.search
+      seed_search(q)
+    end,
+  })
+end
+
+--- Operator-pending flash motion (nvim analog of Emacs `df`/`yf`/`cf`).
+--- Bind on `f` in operator-pending mode; flash jumps to the chosen target and
+--- the pending operator applies to it (e.g. `dfx` deletes to the x-flash hit).
+function M.flash_motion()
+  require("flash").jump({ mode = "char" })
 end
 
 -- =============================================================================

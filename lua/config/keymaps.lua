@@ -122,7 +122,10 @@ map("v", "J", ":m '>+1<CR>gv=gv", opts)
 map("v", "K", ":m '<-2<CR>gv=gv", opts)
 
 -- Sets flash utility to f key and saves position to the jump list
-vim.keymap.set({ "n", "x", "o" }, "f", M.flash_jump_f, { desc = "Flash Jump (Search Sync Fixed)" })
+-- Flash jump on `f` in normal/visual (search-sync via the shared `/` register).
+vim.keymap.set({ "n", "x" }, "f", M.flash_jump_f, { desc = "Flash Jump (Search Sync Fixed)" })
+-- Operator-pending flash motion on `f` (df/yf/cf jump to a flash target).
+vim.keymap.set("o", "f", M.flash_motion, { desc = "Flash motion (operator-pending)" })
 
 -- Disable any LSP in the current buffer
 vim.keymap.set("n", "<leader>lx", function()

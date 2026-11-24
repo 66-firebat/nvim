@@ -17,6 +17,8 @@ require("config.autocmds")
 require("config.jumplist").setup()
 -- Global MRU buffer list (single source of truth for tab + picker numbering).
 require("config.mru").setup()
+-- Per-mode terminal cursor colour/shape via OSC 12 + DECSCUSR (Ghostty).
+require("config.cursor").setup()
 -- Per-window grouped MRU tab bar (port of emacs/MRU-tabs.el).
 require("config.tabs").setup()
 -- Statuscolumn (direct render, no statuscol.nvim caching layer).

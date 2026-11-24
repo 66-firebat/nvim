@@ -218,22 +218,11 @@ map({ "n", "t" }, "<M-w>", M.smart_other_window, { desc = "Other window" })
 -- last window in the tab.
 map({ "n", "t" }, "<M-W>", M.smart_close_window, { desc = "Close window" })
 
--- Buffer picker (Alt-i) — also available in terminal mode.
--- `hidden = true` includes unlisted buffers such as oil directory buffers.
+-- Buffer picker (Alt-i) — global MRU order + MRU ranks, shared with the tab
+-- bar.  Lives in config/mru.lua so the numbering stays in one place.
 map({ "n", "t" }, "<M-i>", function()
-  Snacks.picker.buffers({
-    hidden = true,
-    win = {
-      input = {
-        keys = {
-          ["dd"] = "bufdelete",
-          ["<c-d>"] = { "bufdelete", mode = { "n", "i" } },
-        },
-      },
-      list = { keys = { ["dd"] = "bufdelete" } },
-    },
-  })
-end, { desc = "Buffers" })
+  require("config.mru").pick_buffers()
+end, { desc = "Buffers (MRU)" })
 
 -- Recent files (Alt-r) — also available in terminal mode.
 map({ "n", "t" }, "<M-r>", function()

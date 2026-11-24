@@ -1,0 +1,597 @@
+-- =============================================================================
+--  mru.lua — GLOBAL most-recently-used buffer list (single source of truth)
+--
+--  Ports the `focusHistory` model from git_repositories/spinner6
+--  (`shell.qml` + `lib/spinner6-core.js`): ONE MRU-first ordered array of
+--  buffers, where an item's INDEX in that array *is* the number shown in the
+--  tab bar and in the <M-i> picker.
+--
+--  Properties (agreed in the design Q&A — see emacs-to-nvim.md §8b):
+--    * Numbers are STRICTLY 1-based array positions.  No gaps.  Removing an
+--      entry shifts everything after it up by one.
+--    * The list is GLOBAL.  `tabs.lua` only *displays* one group at a time, so
+--      a group's visible tabs may show non-contiguous numbers (1, 4, 9) —
+--      that is intended: the number is the buffer's global MRU rank.
+--    * Membership is a PURE predicate evaluated on demand (never cached).
+--    * Every `BufEnter` on a member moves it to the front (index 1).
+--    * New buffers are appended to the TAIL; they only reach #1 on entry.
+--    * Pruning happens ONLY on `BufWipeout`, synchronously, and does nothing
+--      but a pure Lua table removal (no nvim API calls -> cannot recurse).
+--
+--  API:
+--      local mru = require("config.mru")
+--      mru.setup()                 -- create autocmds (call once)
+--      mru.touch(bufnr)            -- move to front (no-op if not a member)
+--      mru.rank(bufnr)             -- 1-based global index, or nil
+--      mru.list()                  -- MRU-first bufnr array (filtered)
+--      mru.list_excluding(bufnr)   -- list() minus one bufnr
+--      mru.is_member(bufnr)        -- boolean
+--      mru.refresh()               -- force membership rebuild
+--      mru.terminal_prog(bufnr)    -- foreground program name of a terminal
+-- =============================================================================
+
+local M = {}
+
+-- =============================================================================
+--  State
+-- =============================================================================
+
+--- The MRU list.  `order[1]` is the most recently used buffer.
+--- Entries are raw bufnrs; validity/metadata is resolved lazily at read time.
+---@type integer[]
+local order = {}
+
+-- =============================================================================
+--  §1  Membership
+-- =============================================================================
+
+--- Return true if BUFNR belongs in the global MRU list.
+---
+--- Membership = listed + has a name + not a `*scratch*`-style buffer
+---             + oil directory buffers (which oil creates as `buflisted=false`).
+--- Terminals ARE members (their tab label is resolved separately).
+---
+--- This is a PURE predicate: it reads live buffer state every call and never
+--- caches, so a buffer that stops (or starts) qualifying is handled naturally.
+---@param bufnr integer
+---@return boolean
+function M.is_member(bufnr)
+  if type(bufnr) ~= "number" or bufnr <= 0 then
+    return false
+  end
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return false
+  end
+
+  -- Oil directory buffers are deliberately `buflisted = false`.
+  local is_oil = vim.bo[bufnr].filetype == "oil"
+  if not is_oil and not vim.bo[bufnr].buflisted then
+    return false
+  end
+
+  -- Skip unnamed and scratch-style buffers (mirrors Emacs' exclusion list).
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  if name == "" then
+    return false
+  end
+  local bname = vim.fn.bufname(bufnr)
+  if bname == "[No Name]" or bname:match("^%*") then
+    return false
+  end
+
+  return true
+end
+
+-- =============================================================================
+--  §2  Mutations
+-- =============================================================================
+
+--- Return the 1-based index of BUFNR in `order`, or nil.
+--- Pure table scan (safe to call from within autocmds).
+---@param bufnr integer
+---@return integer|nil
+local function index_of(bufnr)
+  for i, b in ipairs(order) do
+    if b == bufnr then
+      return i
+    end
+  end
+  return nil
+end
+
+--- Append BUFNR to the TAIL if it is a member and not already tracked.
+--- Used for buffers that appear WITHOUT being entered (background opens); the
+--- `BufEnter` that accompanies a normal open promotes them to #1 right after.
+---@param bufnr integer
+function M.add_to_tail(bufnr)
+  if not bufnr or index_of(bufnr) then
+    return
+  end
+  if M.is_member(bufnr) then
+    table.insert(order, bufnr)
+  end
+end
+
+--- Move BUFNR to the front of the MRU list.
+--- An untracked member is first appended, then promoted — so the `BufEnter`
+--- that accompanies opening a file makes it #1 immediately (design Q7+Q8).
+--- Emacs/spinner6 analogue: `moveToFront`.
+---@param bufnr integer
+function M.touch(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  local i = index_of(bufnr)
+  if i == 1 then
+    return
+  elseif i then
+    table.remove(order, i)
+    table.insert(order, 1, bufnr)
+    return
+  end
+
+  -- Not tracked yet: only add if it qualifies, then front it.
+  if M.is_member(bufnr) then
+    table.insert(order, 1, bufnr)
+  end
+end
+
+--- Drop BUFNR from the list without reordering anything else.
+--- NOTE: this is the body of the `BufWipeout` handler — PURE table removal,
+--- no nvim API calls, so it can never recurse or fail mid-wipe.
+---@param bufnr integer
+local function remove(bufnr)
+  local i = index_of(bufnr)
+  if i then
+    table.remove(order, i)
+  end
+end
+
+--- Rebuild the membership of the list, preserving existing MRU order where
+--- possible: tracked buffers that are still members keep their relative order;
+--- any other live member buffers are appended (in bufnr order) at the tail.
+function M.refresh()
+  local seen = {}
+  local rebuilt = {}
+
+  for _, bufnr in ipairs(order) do
+    if not seen[bufnr] and M.is_member(bufnr) then
+      seen[bufnr] = true
+      rebuilt[#rebuilt + 1] = bufnr
+    end
+  end
+
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    if not seen[bufnr] and M.is_member(bufnr) then
+      seen[bufnr] = true
+      rebuilt[#rebuilt + 1] = bufnr
+    end
+  end
+
+  order = rebuilt
+end
+
+-- =============================================================================
+--  §3  Readers
+-- =============================================================================
+
+--- Return the global MRU list (most recent first), filtered to valid members.
+--- Dead/vanished buffers are skipped here as a cheap safety net (the primary
+--- pruning happens in the `BufWipeout` handler).
+---@return integer[]
+function M.list()
+  local out = {}
+  for _, bufnr in ipairs(order) do
+    if M.is_member(bufnr) then
+      out[#out + 1] = bufnr
+    end
+  end
+  return out
+end
+
+--- Like `list()`, but with EXCLUDE omitted (the picker drops the current buf).
+---@param exclude integer|nil
+---@return integer[]
+function M.list_excluding(exclude)
+  local out = {}
+  for _, bufnr in ipairs(M.list()) do
+    if bufnr ~= exclude then
+      out[#out + 1] = bufnr
+    end
+  end
+  return out
+end
+
+--- Return the 1-based global MRU rank of BUFNR, or nil if it is not listed.
+--- @param bufnr integer
+--- @return integer|nil
+function M.rank(bufnr)
+  local n = 0
+  for _, b in ipairs(order) do
+    if M.is_member(b) then
+      n = n + 1
+      if b == bufnr then
+        return n
+      end
+    end
+  end
+  return nil
+end
+
+-- =============================================================================
+--  §4  Terminal foreground-program resolution
+-- =============================================================================
+
+--- How often (ms) the focused window's terminal is re-polled for its
+--- foreground program.  Configurable.
+M.term_poll_interval = 5000
+
+--- bufnr -> program name cache.  Refreshed on TermEnter / BufEnter /
+--- FocusGained / TermClose, and by the focused-window poll.
+---@type table<integer, string>
+local prog_cache = {}
+
+--- Read a field out of /proc/<pid>/stat, working around the comm field being
+--- wrapped in parentheses and possibly containing spaces/parens itself.
+---@param pid integer
+---@return { pgrp: integer, tpgid: integer }|nil
+local function proc_stat(pid)
+  local f = io.open("/proc/" .. pid .. "/stat", "r")
+  if not f then
+    return nil
+  end
+  local line = f:read("*l")
+  f:close()
+  if not line then
+    return nil
+  end
+  -- Skip "pid (comm) " — comm may itself contain spaces or parens, so anchor
+  -- on the LAST ')' in the line's first field group.
+  local rest = line:match("^%d+ %b() (.*)$")
+  if not rest then
+    return nil
+  end
+  -- rest is space-separated: state ppid pgrp session tty_nr tpgid ...
+  local fields = {}
+  for w in rest:gmatch("%S+") do
+    fields[#fields + 1] = w
+  end
+  return {
+    pgrp = tonumber(fields[3]),
+    tpgid = tonumber(fields[6]),
+  }
+end
+
+--- Read /proc/<pid>/comm (the process' short name).
+---@param pid integer
+---@return string|nil
+local function proc_comm(pid)
+  local f = io.open("/proc/" .. pid .. "/comm", "r")
+  if not f then
+    return nil
+  end
+  local name = f:read("*l")
+  f:close()
+  return name ~= "" and name or nil
+end
+
+--- Child pids of PID, via /proc/<pid>/task/<pid>/children (cheap; avoids
+--- scanning all of /proc).
+---@param pid integer
+---@return integer[]
+local function proc_children(pid)
+  local out = {}
+  local f = io.open("/proc/" .. pid .. "/task/" .. pid .. "/children", "r")
+  if not f then
+    return out
+  end
+  local line = f:read("*l")
+  f:close()
+  for n in (line or ""):gmatch("%d+") do
+    out[#out + 1] = tonumber(n)
+  end
+  return out
+end
+
+--- Resolve the FOREGROUND program of a terminal buffer.
+---
+--- Algorithm (verified empirically against nvim's pty):
+---   1. Read the shell's `tpgid` from /proc/<job_pid>/stat (field 6).
+---   2. If tpgid == job_pid (or invalid), the shell itself is in the
+---      foreground -> return the shell's `comm` (e.g. "bash").
+---   3. Otherwise the foreground job is the process whose `pgrp == tpgid`.
+---      Find it among the shell's children (not a full /proc scan).
+---@param bufnr integer
+---@return string|nil
+function M.terminal_fg_program(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not vim.api.nvim_buf_is_valid(bufnr) or vim.bo[bufnr].buftype ~= "terminal" then
+    return nil
+  end
+
+  local ok, job_pid = pcall(vim.api.nvim_buf_get_var, bufnr, "terminal_job_pid")
+  if not ok or not job_pid or job_pid <= 0 then
+    return nil
+  end
+
+  local shell_stat = proc_stat(job_pid)
+  if not shell_stat then
+    return nil
+  end
+
+  -- The shell is in the foreground: report the shell itself.
+  if not shell_stat.tpgid or shell_stat.tpgid <= 0 or shell_stat.tpgid == job_pid then
+    return proc_comm(job_pid) or "sh"
+  end
+
+  -- Otherwise look among the shell's children for the foreground pgrp leader.
+  for _, child in ipairs(proc_children(job_pid)) do
+    local st = proc_stat(child)
+    if st and st.pgrp == shell_stat.tpgid then
+      return proc_comm(child) or proc_comm(job_pid)
+    end
+  end
+
+  -- Fallback: the pgrp leader may not be a direct child; if we cannot find it,
+  -- report the shell rather than showing something stale/wrong.
+  return proc_comm(job_pid)
+end
+
+--- Return the cached foreground program of a terminal, resolving on a miss.
+--- Non-terminal buffers return nil (callers fall back to their own naming).
+---@param bufnr integer
+---@return string|nil
+function M.terminal_prog(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if vim.bo[bufnr].buftype ~= "terminal" then
+    return nil
+  end
+  local cached = prog_cache[bufnr]
+  if cached then
+    return cached
+  end
+  local prog = M.terminal_fg_program(bufnr)
+  if prog then
+    prog_cache[bufnr] = prog
+  end
+  return prog
+end
+
+--- Re-resolve the foreground program of BUFNR, updating the cache.
+--- Returns true if the value CHANGED (caller can then force a redraw).
+---@param bufnr integer
+---@return boolean changed
+function M.refresh_terminal_prog(bufnr)
+  if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+    return false
+  end
+  if vim.bo[bufnr].buftype ~= "terminal" then
+    return false
+  end
+  local old = prog_cache[bufnr]
+  local new = M.terminal_fg_program(bufnr)
+  if new == nil then
+    return false
+  end
+  if new == old then
+    return false
+  end
+  prog_cache[bufnr] = new
+  return true
+end
+
+-- =============================================================================
+--  §5  Setup
+-- =============================================================================
+
+--- Create the autocmds that drive the MRU list and the terminal cache.
+--- Call once (from init.lua).
+function M.setup()
+  local group = vim.api.nvim_create_augroup("GlobalMRU", { clear = true })
+
+  -- Every BufEnter on a member moves it to the front.  No filtering: transient
+  -- buffers are excluded by `is_member` anyway, and dead ones get pruned.
+  vim.api.nvim_create_autocmd("BufEnter", {
+    group = group,
+    callback = function(ev)
+      M.touch(ev.buf)
+    end,
+  })
+
+  -- Buffers that appear WITHOUT being entered (background opens) join at the
+  -- TAIL.  If the buffer is then actually entered, the BufEnter above promotes
+  -- it to #1, which is the usual case (design Q7+Q8).
+  vim.api.nvim_create_autocmd({ "BufNew", "BufAdd" }, {
+    group = group,
+    callback = function(ev)
+      M.add_to_tail(ev.buf)
+    end,
+  })
+
+  -- A terminal becomes a member only once TermOpen fires (its buftype is still
+  -- empty during the BufEnter that creates it), so touch there to make the
+  -- freshly spawned terminal #1 immediately.
+  vim.api.nvim_create_autocmd("TermOpen", {
+    group = group,
+    callback = function(ev)
+      M.touch(ev.buf)
+      prog_cache[ev.buf] = nil
+    end,
+  })
+
+  -- PRUNE: the only removal event we listen to.  Body is a pure table removal
+  -- (no nvim API calls), so it is safe to run synchronously while nvim is
+  -- tearing the buffer down -> the picker's refresh() never sees stale ranks.
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    group = group,
+    callback = function(ev)
+      remove(ev.buf)
+      prog_cache[ev.buf] = nil
+    end,
+  })
+
+  -- ── Terminal foreground-program cache ──────────────────────────────────
+  -- Refresh on entry into a terminal, and when we come back to the window.
+  local function maybe_refresh(bufnr)
+    if bufnr and vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "terminal" then
+      if M.refresh_terminal_prog(bufnr) then
+        vim.cmd("redrawstatus!")
+        vim.cmd("redrawtabline")
+      end
+    end
+  end
+
+  vim.api.nvim_create_autocmd({ "TermEnter", "BufEnter" }, {
+    group = group,
+    callback = function(ev)
+      maybe_refresh(ev.buf)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("FocusGained", {
+    group = group,
+    callback = function()
+      maybe_refresh(vim.api.nvim_get_current_buf())
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("TermClose", {
+    group = group,
+    callback = function(ev)
+      prog_cache[ev.buf] = nil
+    end,
+  })
+
+  -- ── 5s poll: ONLY the focused window's terminal ────────────────────────
+  -- Per design Q6/Q7: one timer keyed to the focused window; when its tpgid
+  -- changes, force an immediate redraw so every winbar updates.
+  local timer = assert((vim.uv or vim.loop).new_timer())
+  timer:start(
+    M.term_poll_interval,
+    M.term_poll_interval,
+    vim.schedule_wrap(function()
+      local bufnr = vim.api.nvim_get_current_buf()
+      if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
+        return
+      end
+      -- Only poll while actually sitting in a terminal buffer.
+      if vim.bo[bufnr].buftype ~= "terminal" then
+        return
+      end
+      if M.refresh_terminal_prog(bufnr) then
+        -- Force every winbar (and the statusline/tabline) to re-evaluate now.
+        vim.cmd("redrawstatus!")
+        vim.cmd("redrawtabline")
+      end
+    end)
+  )
+
+  -- Seed the list with whatever is already open.
+  M.refresh()
+end
+
+-- =============================================================================
+--  §6  Buffer picker (<M-i>) — global MRU order + MRU ranks
+-- =============================================================================
+
+--- Short display name for a buffer, mirroring the tab-bar naming rule so the
+--- picker and the tab bar agree (design Q18/Q19).
+---@param bufnr integer
+---@return string
+local function buffer_display_name(bufnr)
+  if vim.bo[bufnr].buftype == "terminal" then
+    return M.terminal_prog(bufnr) or "terminal"
+  end
+  if vim.bo[bufnr].filetype == "oil" then
+    local raw = vim.api.nvim_buf_get_name(bufnr)
+    local dir = raw:gsub("^oil://", ""):gsub("/+$", "")
+    if dir == "" then dir = "/" end
+    local base = vim.fn.fnamemodify(dir, ":t")
+    if base == "" then base = vim.fn.fnamemodify(dir, ":~") end
+    return base ~= "" and base or dir
+  end
+  local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
+  if name == "" then name = vim.fn.bufname(bufnr) end
+  return name
+end
+
+--- Open the buffer picker in GLOBAL MRU order, numbered by MRU rank and
+--- starting at rank 2 (the current buffer is excluded — design Q5).
+---
+--- The finder is custom so the list is exactly our MRU order (Snacks' own
+--- buffers finder sorts by `lastused` and renders the raw bufnr).  Deletion
+--- still works: `dd`/`<c-d>` -> Snacks.bufdelete.delete() -> `BufWipeout` ->
+--- mru's synchronous table removal -> picker:refresh() re-renders with correct
+--- ranks (zero flicker — design Q21/Q22).
+function M.pick_buffers()
+  local current = vim.api.nvim_get_current_buf()
+
+  -- Snapshot the MRU order + ranks NOW.  The picker (and the act of entering
+  -- its window) can fire BufEnter, which would otherwise re-touch buffers and
+  -- shift ranks mid-render.  Snapshotting keeps the numbers stable while the
+  -- picker is open, which is what the user expects.
+  local snapshot = M.list_excluding(current)
+  local rank_at = {}
+  for i, b in ipairs(M.list()) do
+    rank_at[b] = i
+  end
+
+  local items = {}
+  for _, bufnr in ipairs(snapshot) do
+    local filename = vim.api.nvim_buf_get_name(bufnr)
+    local name = buffer_display_name(bufnr)
+    items[#items + 1] = {
+      buf = bufnr,
+      rank = rank_at[bufnr] or 0,
+      -- `name` is the raw buffer name (for matching); `file` drives the
+      -- icon/display and is our friendly short name.
+      name = filename,
+      file = name,
+      buftype = vim.bo[bufnr].buftype,
+      filetype = vim.bo[bufnr].filetype,
+      text = table.concat({ tostring(rank_at[bufnr] or 0), name, filename }, " "),
+    }
+  end
+
+  local picker
+  picker = require("snacks").picker.pick({
+    -- NOTE: deliberately NO `source = "buffers"` — that would install Snacks'
+    -- own buffers finder, which re-enumerates every buffer (sorted by
+    -- `lastused`) and discards our `items`.  With `items` set we own the list.
+    title = "Buffers (MRU)",
+    items = items,
+    -- Preserve our finder order (ascending MRU rank); Snacks would otherwise
+    -- re-sort scored items and destroy the MRU ordering.
+    sort = false,
+    -- Render: "<rank>  <icon><name>"  (rank replaces the raw bufnr).
+    -- Uses the SNAPSHOT rank so the numbers stay stable while the picker is
+    -- open (they re-sync on the next open).
+    format = function(item, picker_)
+      local SnacksFmt = require("snacks.picker.format")
+      local ret = {
+        { ("%3d"):format(item.rank or 0), "SnacksPickerBufNr" },
+        { " " },
+      }
+      vim.list_extend(ret, SnacksFmt.filename(item, picker_))
+      return ret
+    end,
+    -- Confirm: switch to the buffer.
+    confirm = function(p, item)
+      p:close()
+      if item and item.buf and vim.api.nvim_buf_is_valid(item.buf) then
+        vim.api.nvim_set_current_buf(item.buf)
+      end
+    end,
+    win = {
+      input = {
+        keys = {
+          ["dd"] = "bufdelete",
+          ["<c-d>"] = { "bufdelete", mode = { "n", "i" } },
+        },
+      },
+      list = { keys = { ["dd"] = "bufdelete" } },
+    },
+  })
+  return picker
+end
+
+return M

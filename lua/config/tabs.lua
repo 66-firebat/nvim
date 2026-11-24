@@ -61,51 +61,68 @@ local function current_file_icon(bufnr)
 end
 
 -- =============================================================================
---  Buffer list (Emacs my/ct--visible-buffers)
+--  Buffer list / MRU ordering  — SUPERSEDED by config/mru.lua (§8b)
 -- =============================================================================
+-- The old per-group timestamp model was replaced by a single GLOBAL MRU list
+-- owned by `config.mru`.  The original implementation is kept commented below
+-- for reference; it will be deleted during the final cleanup pass.
+--
+-- local function visible_buffers()
+--   local result = {}
+--   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+--     if vim.api.nvim_buf_is_loaded(bufnr) then
+--       local ft = vim.bo[bufnr].filetype
+--       -- Oil directory buffers are `buflisted = false`, but we DO want every
+--       -- oil buffer to show as a tab in the FileMgr group.  Include them here.
+--       local is_oil = ft == "oil"
+--       if vim.bo[bufnr].buflisted or is_oil then
+--         local name = vim.api.nvim_buf_get_name(bufnr)
+--         -- Skip scratch/messages/unlisted-style (mirrors Emacs exclusion).
+--         local bname = vim.fn.bufname(bufnr)
+--         if name ~= "" and bname ~= "[No Name]" and not bname:match("^%*") then
+--           table.insert(result, bufnr)
+--         end
+--       end
+--     end
+--   end
+--   return result
+-- end
+--
+-- -- Store per-group MRU order: { [group] = { [bufnr] = timestamp } }
+-- local mru_ts = {}
+-- local function touch(bufnr)
+--   mru_ts[bufnr] = vim.uv.hrtime()
+-- end
+--
+-- --- Return the buffers of GROUP, ordered most-recently-used first.
+-- local function mru_group(group)
+--   local bufs = {}
+--   for _, bufnr in ipairs(visible_buffers()) do
+--     if group_for_buffer(bufnr) == group then
+--       bufs[#bufs + 1] = bufnr
+--     end
+--   end
+--   table.sort(bufs, function(a, b)
+--     return (mru_ts[a] or 0) > (mru_ts[b] or 0)
+--   end)
+--   return bufs
+-- end
 
-local function visible_buffers()
-  local result = {}
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(bufnr) then
-      local ft = vim.bo[bufnr].filetype
-      -- Oil directory buffers are `buflisted = false`, but we DO want every
-      -- oil buffer to show as a tab in the FileMgr group.  Include them here.
-      local is_oil = ft == "oil"
-      if vim.bo[bufnr].buflisted or is_oil then
-        local name = vim.api.nvim_buf_get_name(bufnr)
-        -- Skip scratch/messages/unlisted-style (mirrors Emacs exclusion).
-        local bname = vim.fn.bufname(bufnr)
-        if name ~= "" and bname ~= "[No Name]" and not bname:match("^%*") then
-          table.insert(result, bufnr)
-        end
-      end
-    end
-  end
-  return result
-end
+local MRU = require("config.mru")
 
--- =============================================================================
---  MRU ordering (per group)
--- =============================================================================
-
--- Store per-group MRU order: { [group] = { [bufnr] = timestamp } }
-local mru_ts = {}
-local function touch(bufnr)
-  mru_ts[bufnr] = vim.uv.hrtime()
-end
-
---- Return the buffers of GROUP, ordered most-recently-used first.
+--- Return the buffers of GROUP in ASCENDING GLOBAL MRU RANK order.
+--- The number shown on each tab is that global rank (design Q1/Q3), so a group
+--- can legitimately display non-contiguous numbers (1, 4, 9).
+---@param group string
+---@return integer[]
 local function mru_group(group)
   local bufs = {}
-  for _, bufnr in ipairs(visible_buffers()) do
+  for _, bufnr in ipairs(MRU.list()) do
     if group_for_buffer(bufnr) == group then
       bufs[#bufs + 1] = bufnr
     end
   end
-  table.sort(bufs, function(a, b)
-    return (mru_ts[a] or 0) > (mru_ts[b] or 0)
-  end)
+  -- MRU.list() is already MRU-first; ranks ascend in that same order.
   return bufs
 end
 
@@ -117,65 +134,74 @@ local function highlight(group, text)
   return "%#" .. group .. "#" .. text
 end
 
---- Stable buffer identity: a clean 1..N number derived from buffer CREATION
---- ORDER (nvim bufnr is monotonically increasing), so numbers stay stable per
---- buffer and never re-number when others open/close.  Scratch/internal buffers
---- still advance the bufnr counter, but we only NUMBER listed buffers, so the
---- visible numbers are clean 1..N in creation order.
-local stable_number = {} -- bufnr -> number
-local function rebuild_stable_numbers()
-  stable_number = {}
-  -- Listed buffers, sorted by bufnr ascending (= creation order).
-  local listed = {}
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.bo[bufnr].buflisted then
-      listed[#listed + 1] = bufnr
-    end
-  end
-  table.sort(listed)
-  for i, bufnr in ipairs(listed) do
-    stable_number[bufnr] = i
-  end
-end
+--- Stable buffer identity.  SUPERSEDED by `mru.rank()` (§8b): the number is
+--- now the buffer's 1-based position in the GLOBAL MRU list (mutable, no gaps,
+--- shifts on every change).  The old creation-order implementation is kept
+--- commented for reference; it will be deleted during the final cleanup pass.
+--
+-- local stable_number = {} -- bufnr -> number
+-- local function rebuild_stable_numbers()
+--   stable_number = {}
+--   -- Listed buffers, sorted by bufnr ascending (= creation order).
+--   local listed = {}
+--   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+--     if vim.bo[bufnr].buflisted then
+--       listed[#listed + 1] = bufnr
+--     end
+--   end
+--   table.sort(listed)
+--   for i, bufnr in ipairs(listed) do
+--     stable_number[bufnr] = i
+--   end
+-- end
+-- local function get_stable_number(bufnr)
+--   if not stable_number[bufnr] then
+--     rebuild_stable_numbers()
+--   end
+--   return stable_number[bufnr] or bufnr
+-- end
+
+--- Global MRU rank of BUFNR (1-based), or nil when untracked.
+---@param bufnr integer
+---@return integer|string
 local function get_stable_number(bufnr)
-  if not stable_number[bufnr] then
-    rebuild_stable_numbers()
-  end
-  -- Unlisted buffers (e.g. oil://, term://, other buflisted=false buffers) are
-  -- not in `stable_number`.  Fall back to the buffer number so `tab_label`
-  -- never receives nil (which caused `attempt to concatenate local 'num'`).
-  return stable_number[bufnr] or bufnr
+  return MRU.rank(bufnr) or "?"
 end
 
---- Tab label: stable number + modified marker + powerline lead + name.
+--- Tab label: global MRU rank + modified marker + powerline lead + name.
+--- Format is IDENTICAL for every buffer type (design Q18):
+---     "<rank>  <name>"
+--- where `name` is:
+---   * terminal -> its live foreground program (e.g. "bash", "nvim")
+---   * oil      -> the directory's basename
+---   * file     -> the file's basename
 local function tab_label(bufnr, selected)
   local modified = vim.bo[bufnr].modified
-  local prefix = modified and "󰑧 " or ""
-  local raw = vim.api.nvim_buf_get_name(bufnr)
+  local prefix = modified and "󰑷 " or ""
+  local buftype = vim.bo[bufnr].buftype
   local name
-  if vim.bo[bufnr].filetype == "oil" then
+
+  if buftype == "terminal" then
+    -- Terminals show the foreground program of the shell (tpgid), resolved and
+    -- cached by config/mru.lua.  Falls back to a literal label if unknown.
+    name = MRU.terminal_prog(bufnr) or "terminal"
+  elseif vim.bo[bufnr].filetype == "oil" then
     -- Oil buffer names look like `oil:///path/to/dir/`.  Show only the
     -- directory's basename (e.g. `/home/u/proj` -> `proj`); fall back to the
     -- home-abbreviated path for a filesystem root or empty basename.
+    local raw = vim.api.nvim_buf_get_name(bufnr)
     local dir = raw:gsub("^oil://", ""):gsub("/+$", "")
     if dir == "" then dir = "/" end
     name = vim.fn.fnamemodify(dir, ":t")
     if name == "" then name = vim.fn.fnamemodify(dir, ":~") end
     if name == "" then name = dir end
   else
-    name = vim.fn.fnamemodify(raw, ":t")
+    name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
     if name == "" then name = vim.fn.bufname(bufnr) end
   end
+
   local num = get_stable_number(bufnr)
-  local body
-  if vim.bo[bufnr].buftype == "terminal" then
-    -- Numbered terminals are named `term://<N>  terminal`, so the name already
-    -- carries the index; showing the stable number too would duplicate it
-    -- (e.g. "2  1  terminal").  Use just the name.
-    body = " " .. name
-  else
-    body = " " .. num .. "  " .. prefix .. name
-  end
+  local body = " " .. num .. "  " .. prefix .. name
   local hl = selected and "TabSelected" or "TabUnselected"
   return highlight(hl, body)
 end
@@ -197,14 +223,20 @@ local function group_icon_segment(group, count, lnum)
 end
 
 --- Main render function for a window's winbar (PURE — does not mutate state).
+---
+--- Group follows the WINDOW'S buffer (design Q4 option c): the window always
+--- shows the group its current buffer belongs to, and NO foreign tab is
+--- force-inserted.  Members are listed in ASCENDING GLOBAL MRU RANK order;
+--- the current buffer is always rank #1, so it is naturally leftmost.
 local function render(winid)
   local bufnr = vim.api.nvim_win_get_buf(winid)
   local group = group_for_buffer(bufnr)
   local lnum = vim.api.nvim_win_get_cursor(winid)[1]
 
   local buf_list = mru_group(group)
-  -- Always show the CURRENT buffer's tab, even if it isn't in the
-  -- visible_buffers() list.  This prevents the winbar from vanishing entirely.
+
+  -- Safety net: the current buffer may not be a tracked MRU member yet (e.g.
+  -- a very fresh buffer).  Always show it so the winbar never renders empty.
   local current_present = false
   for _, b in ipairs(buf_list) do
     if b == bufnr then current_present = true break end
@@ -212,14 +244,10 @@ local function render(winid)
   if not current_present then
     table.insert(buf_list, 1, bufnr)
   end
-  if #buf_list == 0 then
-    buf_list = { bufnr }
-  end
 
-  -- Move the CURRENT buffer to the FRONT (leftmost), exactly like Emacs
-  -- MRU-tabs.el does: (delq win-buf) then (cons win-buf).  This must NOT
-  -- mutate mru_ts (that would cause re-render flashing); it only reorders the
-  -- local copy for display.
+  -- Put the CURRENT buffer first (leftmost).  It is rank #1 globally, but if
+  -- it is untracked it would otherwise sort arbitrarily.  This only reorders
+  -- the LOCAL copy for display; it never mutates config/mru.lua state.
   for i, b in ipairs(buf_list) do
     if b == bufnr then
       table.remove(buf_list, i)
@@ -387,13 +415,9 @@ function M.setup()
     end,
   })
 
-  -- Track MRU on buffer enter.
-  vim.api.nvim_create_autocmd("BufEnter", {
-    group = group,
-    callback = function()
-      touch(vim.api.nvim_get_current_buf())
-    end,
-  })
+  -- NOTE: BufEnter MRU tracking was MOVED to config/mru.lua (§8b, design Q12a)
+  -- — tabs.lua is now a pure reader of the global MRU list and owns no MRU
+  -- state of its own.
 
   -- Apply to current window immediately.
   local winid = vim.api.nvim_get_current_win()

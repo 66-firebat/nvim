@@ -141,15 +141,14 @@ function M.current_file_dir()
 end
 
 --- Spawn `broot` in a terminal, rooted at the directory of the focused file.
---- Opens in a SEPARATE split/buffer (never replaces the current file buffer).
+--- Opens in a FULL-SIZE buffer (not a split) and focuses it.  The file buffer
+--- stays in the buffer list, just hidden while broot is foreground.
 --- Emacs: `M-e` -> `my/broot-default-directory` (broot branch)
 function M.spawn_broot()
   local dir = M.current_file_dir()
-  -- Launch broot in a terminal, rooted at `dir`.  Use `split` so the terminal
-  -- opens in its own window below the current one, leaving the file untouched.
-  -- (No `startinsert`: nvim :terminal buffers start in insert mode already, so
-  -- keys — including ESC — are passed straight through to broot.)
-  local cmd = string.format("split | terminal cd %s && exec broot", vim.fn.shellescape(dir))
+  -- `enew` opens a fresh full-size buffer, then `terminal` runs broot there and
+  -- nvim focuses it.  (No `startinsert`: :terminal starts in insert mode.)
+  local cmd = string.format("enew | terminal cd %s && exec broot", vim.fn.shellescape(dir))
   vim.cmd(cmd)
 end
 

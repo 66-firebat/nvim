@@ -196,29 +196,25 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 
--- When a broot terminal buffer is closed, switch to the previous buffer, stored in #, subsequently removing the brot buffer
+-- Removed: a TermClose autocmd here tried to switch to the alternate buffer
+-- and delete the broot terminal buffer, but it interfered with normal buffer
+-- navigation (the `buffer #` + `bd!` chain could switch away from the user's
+-- file).  Broot/terminal lifecycle is now handled explicitly — broot quits via
+-- `quit_on_last_cancel`, and the terminal buffer closes when its job exits.
+
+-- Auto-close a terminal buffer when its job exits, so you don't see the
+-- "[Process exited N]" message.  Uses event.buf (the terminal buffer) so it
+-- never touches the user's file buffer.
 vim.api.nvim_create_autocmd("TermClose", {
-  callback = function()
-    local buf = vim.api.nvim_get_current_buf()
-    local name = vim.fn.bufname(buf)
-
-    if name:match("broot") then
-      -- Switch to alternate buffer if possible
-      local alt = vim.fn.bufnr("#")
-      if alt ~= -1 and vim.api.nvim_buf_is_valid(alt) then
-        vim.cmd("buffer #")
-      else
-        -- fallback: open a new empty buffer instead
-        vim.cmd("enew")
+  callback = function(event)
+    vim.schedule(function()
+      if event.buf and vim.api.nvim_buf_is_valid(event.buf) then
+        pcall(vim.api.nvim_buf_delete, event.buf, { force = true })
       end
-
-      -- Now safely delete the broot terminal buffer
-      vim.schedule(function()
-        pcall(vim.cmd, "bd! " .. buf)
-      end)
-    end
+    end)
   end,
 })
+
 
 nvim_create_autocmd = api.nvim_create_autocmd
 
@@ -271,25 +267,14 @@ vim.api.nvim_create_autocmd("TermOpen", {
   end,
 }) ]]
 
--- Automatically close terminal buffers when the job exits, which prevents you from having to manually close them by pressing any key
-vim.api.nvim_create_autocmd("BufLeave", {
-  callback = function()
-    if vim.bo.buftype == "terminal" and vim.fn.bufname():match("broot") then
-      vim.cmd("bd!") -- close the buffer
-    end
-  end,
-})
+-- Removed: a BufLeave autocmd here did `vim.cmd("bd!")` with no buffer
+-- argument, which deleted the CURRENT buffer (the user's file) instead of the
+-- broot terminal whenever focus left it.  We no longer auto-close broot/terminal
+-- buffers on exit — quitting broot explicitly is handled by broot itself.
 
--- Automatically close terminal buffers when the job exits (CTRL+ D)
-vim.api.nvim_create_autocmd("TermClose", {
-    callback = function()
-        -- This ensures we only close it if the process exited successfully (0)
-        -- If you want it to close regardless of exit code, remove the if/end
-        if vim.v.event.status == 0 then
-            vim.cmd("bd!")
-        end
-    end,
-})
+-- Removed: a TermClose autocmd here did `vim.cmd("bd!")` with no buffer arg
+-- (same bug).  Terminal buffers close when their process exits naturally.
+
 
 -- vim.api.nvim_create_autocmd("BufReadPre", {
 --   -- Target all .tex files in any directory

@@ -212,8 +212,8 @@ local function render(winid)
     local sel = (b == bufnr)
     local label = tab_label(b, sel)
     local hl = sel and "TabSelected" or "TabUnselected"
-    local sep = highlight(hl, " ")
-    local sep_between = highlight(hl, " ") .. highlight("TabSepSecond", "")
+    local sep = highlight(hl, " ")
+    local sep_between = highlight(hl, " ") .. highlight("TabSepSecond", "")
     segments[#segments + 1] = { label = label, sep = sep, sep_between = sep_between, bufnr = b, sel = sel }
   end
 
@@ -253,9 +253,7 @@ local function render(winid)
     out = out .. "%#TabEmpty#"
   end
 
-  if hidden > 0 then
-    out = out .. highlight("TabOverflow", overflow_str(hidden))
-  end
+  -- (overflow indicator removed — trimmed tabs simply disappear instead.)
 
   return out
 end

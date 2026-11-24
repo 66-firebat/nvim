@@ -157,7 +157,7 @@ return {
       desc = "Projects",
     },
     {
-      "<leader>fr",
+      "<M-r>",
       function()
         Snacks.picker.recent()
       end,

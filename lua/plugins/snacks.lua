@@ -11,10 +11,8 @@ return {
         preview = "main",
         layout = {
           backdrop = false,
-          width = 40,
-          min_width = 40,
           height = 0.3,
-          position = "left",
+          position = "bottom",
           border = "none",
           box = "vertical",
           {
@@ -46,10 +44,8 @@ return {
         preview = "main",
         layout = {
           backdrop = false,
-          width = 40,
-          min_width = 40,
           height = 0.3,
-          position = "right",
+          position = "bottom",
           border = "none",
           box = "vertical",
           {

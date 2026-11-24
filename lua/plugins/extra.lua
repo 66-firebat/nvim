@@ -175,25 +175,24 @@ return {
       --  - ci'  - [C]hange [I]nside [']quote
       require("mini.ai").setup({ n_lines = 500 })
 
-      -- Add/delete/replace surroundings (brackets, quotes, etc.)
-      --
-      -- Prefix is <C-s> (Ctrl-s) so bare `s` is NOT a prefix key
-      -- (bare `s` is bound to search-buffer-lines in keymaps.lua).
-      -- - <C-s>a iw) - surround add inner word paren
-      -- - <C-s>d '     - surround delete quote
-      -- - <C-s>r )'    - surround replace
+      -- Surround (brackets, quotes, etc.) — VISUAL MODE ONLY, mapped to `s`.
+      -- Bare `s` in NORMAL mode remains search-buffer-lines (keymaps.lua).
+      -- Select text in visual mode and press `s` to wrap the selection.
       require("mini.surround").setup({
         mappings = {
-          add = "<C-s>a",
-          delete = "<C-s>d",
-          find = "<C-s>f",
-          find_left = "<C-s>F",
-          highlight = "<C-s>h",
-          replace = "<C-s>r",
-          suffix_last = "l",
-          suffix_next = "n",
+          add = "",
+          delete = "",
+          find = "",
+          find_left = "",
+          highlight = "",
+          replace = "",
+          suffix_last = "",
+          suffix_next = "",
         },
       })
+      -- Visual-mode `s` -> add a surrounding around the selection.
+      vim.keymap.set("x", "s", [[:<C-u>lua MiniSurround.add("visual")<CR>]],
+        { silent = true, desc = "Add surrounding (visual)" })
 
       require("mini.pairs").setup()
 

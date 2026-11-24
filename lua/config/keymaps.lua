@@ -200,11 +200,11 @@ vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
 vim.keymap.set("n", "<C-l>", [[<Cmd>bnext<CR>]], opts)
 vim.keymap.set("n", "<C-h>", [[<Cmd>bprevious<CR>]], opts)
 
--- Opens a vsplit terminal
-map("n", "<leader>tT", M.terminal_vsplit, { desc = "Terminal in vsplit (right)" })
+-- Opens a vsplit terminal (current buffer left, terminal right).
+map("n", "<M-T>", M.terminal_vsplit, { desc = "Terminal in vsplit (right)" })
 
--- Opens a terminal on a separate buffer (numbered "<N>  terminal", Emacs M-t).
-map("n", "<leader>tt", M.numbered_terminal, { desc = "Numbered terminal" })
+-- Opens a numbered terminal ("<N>  terminal", Emacs M-t).
+map("n", "<M-t>", M.numbered_terminal, { desc = "Numbered terminal" })
 
 -- Switch to alternate buffer
 vim.keymap.set({ "n", "t", "i" }, "<C-b>", [[<Cmd>b#<CR>]], { desc = "Switch to alternate buffer" })

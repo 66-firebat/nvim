@@ -134,7 +134,9 @@ end
 --- This is the canonical "where am I" for spawning file-manager / terminal tools.
 function M.current_file_dir()
   local dir = vim.fn.expand("%:p:h")
-  if dir == "" or not vim.fn.isdirectory(dir) then
+  -- NOTE: vim.fn.isdirectory returns a NUMBER (1/0), and Lua treats 0 as
+  -- truthy, so compare explicitly (== 0 / == 1), never with `not`.
+  if dir == "" or vim.fn.isdirectory(dir) == 0 then
     dir = vim.fn.getcwd()
   end
   return dir
@@ -228,6 +230,53 @@ end
 -- Kept for backward compat: alias to broot_toggle.
 function M.open_broot()
   M.broot_toggle()
+end
+
+-- =============================================================================
+--  Oil smart dispatch (Emacs `M-e` -> my/broot-default-directory analogue)
+-- =============================================================================
+
+-- Buffer-local variable on an oil buffer, recording the buffer oil was spawned
+-- from:  b:oil_source = <bufnr>
+local OIL_SOURCE_VAR = "oil_source"
+
+--- Return true if BUFNR is an oil directory buffer.
+function M.is_oil(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return false
+  end
+  return vim.bo[bufnr].filetype == "oil"
+end
+
+--- Toggle Oil at the current file's directory (Emacs `M-e`).
+---
+--- - If the current buffer is an oil buffer: close it, and return to the
+---   buffer oil was spawned from (tracked via `b:oil_source`).
+--- - Otherwise: open oil rooted at the focused file's directory, recording the
+---   current buffer as the origin so the toggle can return to it.
+function M.oil_toggle()
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  if M.is_oil(bufnr) then
+    -- Close the oil buffer.  We still RECORD the source on open (b:oil_source)
+    -- but do NOT force a return to it here — callers may use the tracked
+    -- origin buffer themselves.  Just delete and let nvim pick the buffer.
+    pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+    return
+  end
+
+  -- Not in oil: open it at the current file's directory and remember the origin.
+  local source = bufnr
+  local dir = M.current_file_dir()
+  local ok = pcall(vim.cmd, "Oil " .. vim.fn.fnameescape(dir))
+  if not ok then
+    pcall(vim.cmd, "Oil")
+  end
+  local oil_buf = vim.api.nvim_get_current_buf()
+  if M.is_oil(oil_buf) then
+    vim.api.nvim_buf_set_var(oil_buf, OIL_SOURCE_VAR, source)
+  end
 end
 
 -- =============================================================================
@@ -340,7 +389,7 @@ function M.toggle_file_manager_at_cwd()
   end
 
   local dir = vim.fn.expand("%:p:h")
-  if dir == "" or not vim.fn.isdirectory(dir) then
+  if dir == "" or vim.fn.isdirectory(dir) == 0 then
     dir = vim.fn.getcwd()
   end
   require("oil").open(dir)

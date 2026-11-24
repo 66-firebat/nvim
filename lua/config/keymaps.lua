@@ -95,11 +95,12 @@ map("n", "<leader>rr", "<Plug>SlimeMotionSend}}", {
 -- FILE MANAGEMENT
 -- map('n', '<leader>e', "<cmd>Fyler<cr>", { desc = 'Open Oil' })
 
--- Toggle broot at the current file's directory (displaces Snacks explorer).
+-- Toggle Oil at the current file's directory (Emacs M-e).
+-- In an oil buffer it closes it and returns to the buffer oil was spawned from;
+-- otherwise it opens oil rooted at the focused file's directory.
+-- (broot toggle kept commented for reference)
 -- map({ "n", "t" }, "<M-e>", M.broot_toggle, { desc = "Toggle broot at file dir" })
-
--- Open Oil (writable file manager)
-map({ "n", "t" }, "<M-e>", M.open_oil, { desc = "open oil" })
+map({ "n", "t" }, "<M-e>", M.oil_toggle, { desc = "Toggle oil at file dir" })
 
 -- `s` -> fuzzy search the current buffer's lines (Emacs `s` / consult-line).
 map("n", "s", M.search_line_jump, { desc = "Search buffer lines" })
@@ -210,8 +211,10 @@ map({ "n", "t" }, "<M-T>", M.terminal_vsplit, { desc = "Terminal in vsplit (righ
 map({ "n", "t" }, "<M-t>", M.numbered_terminal, { desc = "Numbered terminal" })
 
 -- Buffer picker (Alt-i) — also available in terminal mode.
+-- `hidden = true` includes unlisted buffers such as oil directory buffers.
 map({ "n", "t" }, "<M-i>", function()
   Snacks.picker.buffers({
+    hidden = true,
     win = {
       input = {
         keys = {

@@ -17,8 +17,15 @@ return {
   },
   config = function()
     require("oil").setup({
-      win_options = {
-        winbar = "%!v:lua.get_oil_winbar()",
+      -- NOTE: do NOT set win_options.winbar here.  If oil manages the winbar
+      -- at all (even to ""), it overwrites the winbar AFTER the MRU-tabs
+      -- autocmd runs, leaving the tab header blank.  Letting oil leave the
+      -- winbar untouched lets config/tabs.lua's value persist.
+      -- Wipe oil buffers when navigating away instead of hiding them, so
+      -- browsing directories does not pile up one hidden buffer per directory.
+      buf_options = {
+        buflisted = false,
+        bufhidden = "wipe",
       },
       columns = {
         "icon",

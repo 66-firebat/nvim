@@ -67,12 +67,18 @@ end
 local function visible_buffers()
   local result = {}
   for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].buflisted then
-      local name = vim.api.nvim_buf_get_name(bufnr)
-      -- Skip scratch/messages/unlisted-style (mirrors Emacs exclusion).
-      local bname = vim.fn.bufname(bufnr)
-      if name ~= "" and bname ~= "[No Name]" and not bname:match("^%*") then
-        table.insert(result, bufnr)
+    if vim.api.nvim_buf_is_loaded(bufnr) then
+      local ft = vim.bo[bufnr].filetype
+      -- Oil directory buffers are `buflisted = false`, but we DO want every
+      -- oil buffer to show as a tab in the FileMgr group.  Include them here.
+      local is_oil = ft == "oil"
+      if vim.bo[bufnr].buflisted or is_oil then
+        local name = vim.api.nvim_buf_get_name(bufnr)
+        -- Skip scratch/messages/unlisted-style (mirrors Emacs exclusion).
+        local bname = vim.fn.bufname(bufnr)
+        if name ~= "" and bname ~= "[No Name]" and not bname:match("^%*") then
+          table.insert(result, bufnr)
+        end
       end
     end
   end
@@ -145,8 +151,21 @@ end
 local function tab_label(bufnr, selected)
   local modified = vim.bo[bufnr].modified
   local prefix = modified and "󰑧 " or ""
-  local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
-  if name == "" then name = vim.fn.bufname(bufnr) end
+  local raw = vim.api.nvim_buf_get_name(bufnr)
+  local name
+  if vim.bo[bufnr].filetype == "oil" then
+    -- Oil buffer names look like `oil:///path/to/dir/`.  Show only the
+    -- directory's basename (e.g. `/home/u/proj` -> `proj`); fall back to the
+    -- home-abbreviated path for a filesystem root or empty basename.
+    local dir = raw:gsub("^oil://", ""):gsub("/+$", "")
+    if dir == "" then dir = "/" end
+    name = vim.fn.fnamemodify(dir, ":t")
+    if name == "" then name = vim.fn.fnamemodify(dir, ":~") end
+    if name == "" then name = dir end
+  else
+    name = vim.fn.fnamemodify(raw, ":t")
+    if name == "" then name = vim.fn.bufname(bufnr) end
+  end
   local num = get_stable_number(bufnr)
   local body = " " .. num .. "  " .. prefix .. name
   local hl = selected and "TabSelected" or "TabUnselected"

@@ -204,7 +204,8 @@ end
 --- current group (1->󰲠, 2->󰲢, ..., 9->󰲰, 10+->󰲲), matching Emacs MRU-tabs.el.
 local function group_icon_segment(group, count, lnum)
   local icon = overflow_icons[math.min(math.max(count, 1), 10)] or overflow_icons[10]
-  return highlight("TabGroupIcon", " " .. icon .. " ")
+  return highlight("TabCountLead", " ")
+    .. highlight("TabGroupIcon", icon .. " ")
 end
 
 --- Main render function for a window's winbar (PURE — does not mutate state).
@@ -242,8 +243,9 @@ local function render(winid)
   local win_width = vim.api.nvim_win_get_width(winid)
   local icon_str = group_icon_segment(group, #buf_list, lnum)
   M._last_debug = { winid = winid, bufnr = bufnr, group = group, mru = { unpack(buf_list) }, n = #buf_list }
-  -- Append the CURRENT file's icon right after the line-number segment (before
-  -- the first tab's powerline lead).
+  -- Separator between the buffer-count icon and the filetype icon.
+  icon_str = icon_str .. highlight("TabCountSep", "")
+  -- Append the CURRENT file's icon.
   local ficon = current_file_icon(bufnr)
   if ficon ~= "" then
     icon_str = icon_str .. highlight("TabFileIcon", " " .. ficon .. " ")
@@ -334,7 +336,11 @@ end
 
 local function ensure_highlights()
   local defs = {
-    TabGroupIcon     = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
+    TabGroupIcon     = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
+    -- Leading cap before the count icon (space + 󱗸), blends into gutter bg.
+    TabCountLead     = { fg = "#2b2b2b", bg = "#ff4400" },
+    -- Separator between the count icon and the filetype icon.
+    TabCountSep      = { fg = "#2b2b2b", bg = "#ff4400" },
     -- Filetype icon (inverted vs TabGroupIcon): dark fg on orange bg.
     TabFileIcon      = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
     -- Powerline cap before the filetype icon: fg=#2b2b2b / bg=#ff4400.

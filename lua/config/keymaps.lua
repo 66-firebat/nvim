@@ -96,13 +96,10 @@ map("n", "<leader>rr", "<Plug>SlimeMotionSend}}", {
 -- map('n', '<leader>e', "<cmd>Fyler<cr>", { desc = 'Open Oil' })
 
 -- Toggle broot at the current file's directory (displaces Snacks explorer).
-map("n", "<leader>e", M.broot_toggle, { desc = "Toggle broot at file dir" })
+map("n", "<M-e>", M.broot_toggle, { desc = "Toggle broot at file dir" })
 
--- Open broot in a terminal (commented out; oil is the active file manager)
--- map("n", "<M-e>", M.open_broot, { desc = "open broot" })
-
--- Open Oil (writable file manager)
-map({ "n", "t" }, "<M-e>", M.open_oil, { desc = "open oil" })
+-- Open Oil (writable file manager) — disabled in favor of broot on Alt+e.
+-- map({ "n", "t" }, "<M-e>", M.open_oil, { desc = "open oil" })
 
 -- `s` -> fuzzy search the current buffer's lines (Emacs `s` / consult-line).
 map("n", "s", M.search_line_jump, { desc = "Search buffer lines" })
@@ -195,6 +192,12 @@ vim.keymap.set("t", "<C-;>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
 -- (vim/less/htop/broot inside the terminal) won't receive it.  Use <C-;> if
 -- you prefer to keep ESC for the program.
 vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
+
+-- Forward ESC to the terminal's job when in a terminal buffer's NORMAL mode
+-- (the counterpart to the ESC-in-terminal-mode map above). Installed once per
+-- terminal via TermOpen; buffer-local so it only fires in terminal buffers and
+-- never touches regular file buffers.
+M.setup_terminal_esc()
 
 -- Navigate buffers without centering the cursor
 vim.keymap.set("n", "<C-l>", [[<Cmd>bnext<CR>]], opts)

@@ -653,4 +653,25 @@ function M.setup_pane_glyphs()
   vim.api.nvim_set_hl(0, "VertSplit", { fg = "#8c8c8c", bg = "none" })
 end
 
+--- Forward ESC to the terminal's job when in a terminal buffer's NORMAL mode.
+--  Installed once per terminal via TermOpen, scoped with `buffer = <buf>` so it
+--  only fires inside that terminal buffer and never touches regular file buffers.
+--  Call M.setup_terminal_esc() once at startup.
+function M.setup_terminal_esc()
+  local augroup = vim.api.nvim_create_augroup("TerminalEscForward", { clear = true })
+  vim.api.nvim_create_autocmd("TermOpen", {
+    group = augroup,
+    desc = "Forward Esc to the terminal from normal mode",
+    callback = function(args)
+      local bufnr = args.buf
+      vim.keymap.set("n", "<Esc>", function()
+        local chan = vim.api.nvim_get_option_value("channel", { buf = bufnr })
+        if chan and chan > 0 then
+          vim.api.nvim_chan_send(chan, "\27")
+        end
+      end, { buffer = bufnr, desc = "Send Esc to terminal" })
+    end,
+  })
+end
+
 return M

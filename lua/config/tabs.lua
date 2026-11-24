@@ -145,10 +145,9 @@ local function tab_label(bufnr, selected)
   local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
   if name == "" then name = vim.fn.bufname(bufnr) end
   local num = get_stable_number(bufnr)
-  local body = " " .. num .. "  " .. prefix .. name
-  local lead_hl = selected and "TabLeadSel" or "TabLeadUnsel"
+  local body = num .. "󱗹 " .. prefix .. name
   local hl = selected and "TabSelected" or "TabUnselected"
-  return highlight(lead_hl, "") .. highlight(hl, body)
+  return highlight(hl, body)
 end
 
 --- Overflow icon (Emacs my/ct--overflow-str + my/ct--overflow-icons).
@@ -204,11 +203,7 @@ local function render(winid)
   M._last_debug = { winid = winid, bufnr = bufnr, group = group, mru = { unpack(buf_list) }, n = #buf_list }
   -- Separator between the buffer-count icon and the filetype icon.
   icon_str = icon_str .. highlight("TabCountSep", "")
-  -- Append the CURRENT file's icon.
-  local ficon = current_file_icon(bufnr)
-  if ficon ~= "" then
-    icon_str = icon_str .. highlight("TabFileIcon", " " .. ficon .. " ")
-  end
+  -- (filetype icon removed — it now lives in lualine segment A.)
   local icon_width = vim.fn.strdisplaywidth(icon_str:gsub("%%#.-#", ""):gsub("%%%*", ""))
 
   -- Build tab segments.
@@ -306,7 +301,7 @@ local function ensure_highlights()
     TabFileCap       = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
     TabGroupSep      = { fg = "#2b2b2b", bg = "#ff4400" },
     TabGroupLnum     = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
-    TabSelected      = { fg = "#2b2b2b", bg = "#8c8c8c", bold = true },
+    TabSelected      = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
     TabUnselected    = { fg = "#2b2b2b", bg = "#5c5c5c" },
     -- Powerline lead glyph: selected lead is orange; non-selected lead is dark.
     TabLeadSel       = { fg = "#ff4400", bg = "#8c8c8c", bold = true },

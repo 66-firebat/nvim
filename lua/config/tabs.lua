@@ -135,7 +135,10 @@ local function get_stable_number(bufnr)
   if not stable_number[bufnr] then
     rebuild_stable_numbers()
   end
-  return stable_number[bufnr]
+  -- Unlisted buffers (e.g. oil://, term://, other buflisted=false buffers) are
+  -- not in `stable_number`.  Fall back to the buffer number so `tab_label`
+  -- never receives nil (which caused `attempt to concatenate local 'num'`).
+  return stable_number[bufnr] or bufnr
 end
 
 --- Tab label: stable number + modified marker + powerline lead + name.

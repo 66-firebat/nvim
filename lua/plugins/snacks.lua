@@ -157,12 +157,13 @@ return {
       desc = "Projects",
     },
     {
-      "<M-r>",
+      "<leader>pp",
       function()
-        Snacks.picker.recent()
+        Snacks.picker.projects()
       end,
-      desc = "Recent",
+      desc = "Projects",
     },
+    -- <M-r> (Recent) moved to keymaps.lua so it also works in terminal mode.
     -- git
     {
       "<leader>gb",

@@ -96,10 +96,10 @@ map("n", "<leader>rr", "<Plug>SlimeMotionSend}}", {
 -- map('n', '<leader>e', "<cmd>Fyler<cr>", { desc = 'Open Oil' })
 
 -- Toggle broot at the current file's directory (displaces Snacks explorer).
-map("n", "<M-e>", M.broot_toggle, { desc = "Toggle broot at file dir" })
+-- map({ "n", "t" }, "<M-e>", M.broot_toggle, { desc = "Toggle broot at file dir" })
 
--- Open Oil (writable file manager) — disabled in favor of broot on Alt+e.
--- map({ "n", "t" }, "<M-e>", M.open_oil, { desc = "open oil" })
+-- Open Oil (writable file manager)
+map({ "n", "t" }, "<M-e>", M.open_oil, { desc = "open oil" })
 
 -- `s` -> fuzzy search the current buffer's lines (Emacs `s` / consult-line).
 map("n", "s", M.search_line_jump, { desc = "Search buffer lines" })
@@ -223,6 +223,16 @@ map({ "n", "t" }, "<M-i>", function()
     },
   })
 end, { desc = "Buffers" })
+
+-- Recent files (Alt-r) — also available in terminal mode.
+map({ "n", "t" }, "<M-r>", function()
+  Snacks.picker.recent()
+end, { desc = "Recent" })
+
+-- Copilot panel open.  Owned by the copilot.lua plugin (i-mode, key="<M-CR>"
+-- in its panel config).  Kept here, commented, for reference only — do not
+-- enable or you'll double-bind it.
+-- vim.keymap.set("i", "<M-CR>", function() vim.cmd("Copilot panel") end, { desc = "Copilot panel" })
 
 -- Kill the current buffer (Alt-k) — works in normal AND terminal mode.
 map({ "n", "t" }, "<M-k>", function()

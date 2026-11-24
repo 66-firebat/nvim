@@ -102,10 +102,12 @@ local function style_for_mode(mode)
   -- (the "n" there is the no-mouse flag, not normal mode).
   local first = mode:sub(1, 1)
 
-  -- Terminal mode: explicitly use the NORMAL style (a terminal has no text to
-  -- select, and the normal accent/hollow-block reads best while typing).
-  if first == "t" then
-    return "normal"
+  -- Terminal mode: use the INSERT style (grey blinking bar) — while typing in a
+  -- terminal you are effectively in insert mode, so this mirrors insert.
+  -- NOTE: mode() reports terminal mode as "nt" (the leading "n" is the
+  -- no-mouse flag), so test for "t" ANYWHERE in the string, not just first char.
+  if mode:find("t", 1, true) then
+    return "insert"
   end
 
   if first == "i" or first == "R" then
@@ -143,29 +145,50 @@ function M.setup()
   local group = vim.api.nvim_create_augroup("CursorAppearance", { clear = true })
 
   -- ModeChanged fires with "old:new" (e.g. "n:i").  React to the NEW mode.
+  --
+  -- We read the LIVE mode with `vim.api.nvim_get_mode().mode` rather than
+  -- trusting `ev.match`'s new-mode field, and defer one tick so nvim has settled
+  -- into the new mode before we query it.
   vim.api.nvim_create_autocmd("ModeChanged", {
     group = group,
     callback = function(ev)
       local new_mode = ev.match:match(":(.*)$") or ""
+
       -- Cmdline/cmdwin churn is noisy and not a "real" cursor state; skip it to
       -- avoid spamming the terminal with escapes.
       if new_mode:sub(1, 1) == "c" then
         return
       end
-      M.apply(new_mode)
+
+      -- NOTE: nvim reports both terminal-job mode and terminal-NORMAL mode as
+      -- "nt", so this handler cannot tell them apart.  The `t`-mode keymaps in
+      -- keymaps.lua handle leaving the terminal job explicitly
+      -- (exit_terminal_mode -> cursor.apply("n")).
+      vim.schedule(function()
+        M.apply(vim.api.nvim_get_mode().mode)
+      end)
     end,
   })
 
   -- Terminal buffers: `ModeChanged` does NOT reliably fire when entering a
   -- terminal (there is no real "normal -> terminal" text transition), so apply
-  -- the NORMAL style explicitly whenever we enter / spawn a terminal.  Per
-  -- design, terminal mode uses the same cursor as normal mode.
+  -- the INSERT style explicitly whenever we enter / spawn a terminal.  Per
+  -- design, terminal mode uses the same cursor as insert mode (grey bar).
+  -- Only force the insert style while the terminal JOB actually owns the keys
+  -- (mode contains "t").  If you are in terminal-NORMAL mode inside a terminal
+  -- buffer (after C-\ C-n / <Esc>) the normal style must apply instead.
   vim.api.nvim_create_autocmd({ "TermEnter", "TermOpen", "BufEnter" }, {
     group = group,
     callback = function(ev)
-      if ev.buf and vim.api.nvim_buf_is_valid(ev.buf) and vim.bo[ev.buf].buftype == "terminal" then
-        M.apply("n")
+      if not (ev.buf and vim.api.nvim_buf_is_valid(ev.buf)) then
+        return
       end
+      if vim.bo[ev.buf].buftype ~= "terminal" then
+        return
+      end
+      vim.schedule(function()
+        M.apply(vim.api.nvim_get_mode().mode)
+      end)
     end,
   })
 

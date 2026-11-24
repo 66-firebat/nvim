@@ -88,6 +88,16 @@ vim.opt.winborder = "single"	  -- https://neovim.io/doc/user/options.html#'winbo
 -- disable nvim's cursor shaping (see :h 'guicursor').
 vim.opt.guicursor = ""
 
+-- Also blank the terminfo cursor-shape capabilities.  nvim emits t_Ss when it
+-- wants a shaped cursor and t_Se to END that shape; on every redraw it can
+-- re-send t_Se, which resets the terminal's cursor to its configured default.
+-- That is what made a visual/insert shape snap back to Ghostty's hollow block
+-- as soon as the cursor moved.  Clearing both leaves config/cursor.lua as the
+-- only writer of DECSCUSR, so shapes persist until we change them.
+-- NOTE: terminfo options are NOT addressable as `vim.o.t_Ss` (that raises
+-- "Unknown option"); they must be set with `:set`.
+vim.cmd("set t_Ss= t_Se=")
+
 -- (previous cursor experiments, kept for reference)
 -- vim.opt.guicursor = "n-v-c-sm:block,i-ci-ve:ver25,r-cr-o:hor20"
 -- vim.opt.guicursor = "i-ci:ver30-iCursor-blinkwait300-blinkon200-blinkoff150"

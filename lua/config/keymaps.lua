@@ -187,12 +187,23 @@ end)
 -- Exit terminal mode and go to the next buffer
 vim.keymap.set("t", "<C-h>", [[<Cmd>bprevious<CR>]], { desc = "Terminal previous buffer" })
 vim.keymap.set("t", "<C-l>", [[<Cmd>bnext<CR>]], { desc = "Terminal next buffer" })
-vim.keymap.set("t", "<C-;>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
+-- Leave terminal mode AND restore the normal cursor appearance.
+-- nvim reports both terminal-job mode and terminal-NORMAL mode as "nt", so
+-- config/cursor.lua cannot tell them apart on its own; doing it here, in the
+-- very mapping that performs the transition, makes the colour revert reliably.
+local function exit_terminal_mode()
+  vim.cmd("stopinsert")
+  pcall(function()
+    require("config.cursor").apply("n")
+  end)
+end
+
+vim.keymap.set("t", "<C-;>", exit_terminal_mode, { desc = "Exit terminal mode" })
 -- ESC in terminal mode -> leave terminal mode (go to normal mode).
 -- NOTE: this captures ESC for ALL terminal buffers, so programs that use ESC
 -- (vim/less/htop/broot inside the terminal) won't receive it.  Use <C-;> if
 -- you prefer to keep ESC for the program.
-vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
+vim.keymap.set("t", "<Esc>", exit_terminal_mode, { desc = "Exit terminal mode" })
 
 -- Forward ESC to the terminal's job when in a terminal buffer's NORMAL mode
 -- (the counterpart to the ESC-in-terminal-mode map above). Installed once per

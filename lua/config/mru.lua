@@ -624,6 +624,17 @@ function M.pick_buffers()
       vim.list_extend(ret, SnacksFmt.filename(item, picker_))
       return ret
     end,
+    -- Keep the TABLINE in sync with the previewed buffer (design option b).
+    -- Snacks calls this whenever the highlighted item changes, BEFORE the
+    -- preview window is repainted, so defer one tick and then force every
+    -- window's WINBAR to re-evaluate.  `nvim__redraw{winbar=true}` is the only
+    -- thing that reliably repaints the winbar of non-current windows (a plain
+    -- :redrawstatus! does not).
+    on_change = function()
+      vim.schedule(function()
+        pcall(vim.api.nvim__redraw, { winbar = true, flush = true })
+      end)
+    end,
     -- Confirm: switch to the buffer.
     confirm = function(p, item)
       p:close()

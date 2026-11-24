@@ -236,10 +236,12 @@ local function render(winid)
   local win_buf = vim.api.nvim_win_get_buf(winid)
   local bufnr = win_buf
   local preview = MRU.preview_buffer()
-  -- Only override when the previewed buffer is a real MRU member that belongs
-  -- to the same group as this window's buffer.  (The picker's own preview
-  -- window may hold an unrelated scratch buffer, which must be ignored.)
-  if preview and MRU.rank(preview) and group_for_buffer(preview) == group_for_buffer(win_buf) then
+  -- While a picker is open and previewing a REAL MRU member, the tab bar
+  -- follows the PREVIEW: it shows that buffer as current AND switches to that
+  -- buffer's GROUP (design option b).  So previewing a terminal from a Docs
+  -- window temporarily shows the Terminal group's tabs.  The picker's own
+  -- scratch/preview buffers are ignored via the `MRU.rank(preview)` check.
+  if preview and MRU.rank(preview) then
     bufnr = preview
   end
   local group = group_for_buffer(bufnr)

@@ -80,9 +80,17 @@ vim.opt.fillchars = { eob = " ", vert = "╎" } -- change the char at end of buf
 -- vim.opt.winborder = "rounded" -- solid
 vim.opt.winborder = "single"	  -- https://neovim.io/doc/user/options.html#'winborder'
 
+-- Cursor is handled by the terminal emulator (Ghostty), not by nvim.
+-- Set 'guicursor' to the EMPTY STRING: nvim then draws no cursor of its own and
+-- sends no cursor-shape escapes, so whatever Ghostty is configured to draw
+-- (shape/blink/colour) applies unconditionally.  Do NOT use `vim.opt.guicursor
+-- = ""` here expecting a reset — an empty value is the documented way to
+-- disable nvim's cursor shaping (see :h 'guicursor').
+vim.opt.guicursor = ""
+
+-- (previous cursor experiments, kept for reference)
 -- vim.opt.guicursor = "n-v-c-sm:block,i-ci-ve:ver25,r-cr-o:hor20"
 -- vim.opt.guicursor = "i-ci:ver30-iCursor-blinkwait300-blinkon200-blinkoff150"
--- vim.opt.guicursor = ""
 
 
 -- vim.opt.cursorlineopt = "number"		 -- set the cursorline

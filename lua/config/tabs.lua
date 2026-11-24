@@ -145,7 +145,7 @@ local function tab_label(bufnr, selected)
   local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ":t")
   if name == "" then name = vim.fn.bufname(bufnr) end
   local num = get_stable_number(bufnr)
-  local body = num .. "󱗹 " .. prefix .. name
+  local body = " " .. num .. "  " .. prefix .. name
   local hl = selected and "TabSelected" or "TabUnselected"
   return highlight(hl, body)
 end
@@ -211,8 +211,10 @@ local function render(winid)
   for _, b in ipairs(buf_list) do
     local sel = (b == bufnr)
     local label = tab_label(b, sel)
-    local sep = highlight(sel and "TabSelected" or "TabUnselected", " ")
-    segments[#segments + 1] = { label = label, sep = sep, bufnr = b, sel = sel }
+    local hl = sel and "TabSelected" or "TabUnselected"
+    local sep = highlight(hl, " ")
+    local sep_between = highlight(hl, " ") .. highlight("TabSepSecond", "")
+    segments[#segments + 1] = { label = label, sep = sep, sep_between = sep_between, bufnr = b, sel = sel }
   end
 
   -- Trim RIGHTMOST non-selected tabs until everything fits (Emacs
@@ -242,7 +244,7 @@ local function render(winid)
   for i, s in ipairs(segments) do
     out = out .. s.label
     if i < #segments then
-      out = out .. s.sep
+      out = out .. s.sep_between  -- two separators between tabs
     end
   end
   if #segments > 0 then
@@ -303,6 +305,8 @@ local function ensure_highlights()
     TabGroupLnum     = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
     TabSelected      = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
     TabUnselected    = { fg = "#2b2b2b", bg = "#5c5c5c" },
+    -- Second separator glyph between tabs (independent highlight group).
+    TabSepSecond     = { fg = "#5c5c5c", bg = "#2b2b2b" },
     -- Powerline lead glyph: selected lead is orange; non-selected lead is dark.
     TabLeadSel       = { fg = "#ff4400", bg = "#8c8c8c", bold = true },
     TabLeadUnsel     = { fg = "#2b2b2b", bg = "#5c5c5c" },

@@ -167,7 +167,15 @@ local function tab_label(bufnr, selected)
     if name == "" then name = vim.fn.bufname(bufnr) end
   end
   local num = get_stable_number(bufnr)
-  local body = " " .. num .. "  " .. prefix .. name
+  local body
+  if vim.bo[bufnr].buftype == "terminal" then
+    -- Numbered terminals are named `term://<N>  terminal`, so the name already
+    -- carries the index; showing the stable number too would duplicate it
+    -- (e.g. "2  1  terminal").  Use just the name.
+    body = " " .. name
+  else
+    body = " " .. num .. "  " .. prefix .. name
+  end
   local hl = selected and "TabSelected" or "TabUnselected"
   return highlight(hl, body)
 end

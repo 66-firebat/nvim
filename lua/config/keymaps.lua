@@ -210,6 +210,14 @@ map({ "n", "t" }, "<M-T>", M.terminal_vsplit, { desc = "Terminal in vsplit (righ
 -- Opens a numbered terminal ("<N>  terminal", Emacs M-t).
 map({ "n", "t" }, "<M-t>", M.numbered_terminal, { desc = "Numbered terminal" })
 
+-- Smart other window (Emacs M-w): split right showing the alternate buffer if
+-- there is only one window, otherwise focus the other window.
+map({ "n", "t" }, "<M-w>", M.smart_other_window, { desc = "Other window" })
+
+-- Smart close window (Emacs M-W): close the current window; no-op if it is the
+-- last window in the tab.
+map({ "n", "t" }, "<M-W>", M.smart_close_window, { desc = "Close window" })
+
 -- Buffer picker (Alt-i) — also available in terminal mode.
 -- `hidden = true` includes unlisted buffers such as oil directory buffers.
 map({ "n", "t" }, "<M-i>", function()

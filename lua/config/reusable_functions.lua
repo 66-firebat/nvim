@@ -38,74 +38,30 @@ function M.smart_other_window()
   end
 end
 
---- Close the current window; no-op if it is the last window in the tab.
+--- Close the current window; no-op if it is the last (non-floating) window in
+--- the tab.
 --- Emacs: `my/smart-close-window` (M-W)
 function M.smart_close_window()
-  if vim.fn.winnr("$") <= 1 then
+  -- Do not touch floating windows (pickers, notifications).
+  local cur = vim.api.nvim_get_current_win()
+  local cfg = vim.api.nvim_win_get_config(cur)
+  if cfg.relative and cfg.relative ~= "" then
+    return
+  end
+  -- Count only NON-floating windows in the current tab: `winnr("$")` includes
+  -- floats, which made the guard pass while `:close` still failed with E444.
+  local real = 0
+  for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local c = vim.api.nvim_win_get_config(w)
+    if not (c.relative and c.relative ~= "") then
+      real = real + 1
+    end
+  end
+  if real <= 1 then
     vim.notify("Last window in tab, doing nothing", vim.log.levels.INFO)
     return
   end
-  vim.cmd("close")
-end
-
--- =============================================================================
---  §2  Buffer navigation
--- =============================================================================
-
---- Jump to a non-excluded buffer selected by numeric index.
---- The digit typed is used to seed the completion/prompt.
---- Emacs: `SPC b 0-9` -> `my/buffer-goto`
-function M.buffer_by_index()
-  local listed = vim.fn.getbufinfo({ buflisted = 1 })
-  if #listed == 0 then
-    vim.notify("No listed buffers", vim.log.levels.INFO)
-    return
-  end
-
-  -- Exclude scratch-ish/unnamed buffers that are not useful to jump to.
-  local candidates = {}
-  for _, info in ipairs(listed) do
-    if info.name ~= "" then
-      table.insert(candidates, info)
-    end
-  end
-  if #candidates == 0 then
-    vim.notify("No named buffers", vim.log.levels.INFO)
-    return
-  end
-
-  -- Build "N: name" display strings (1-based, matching Emacs behavior loosely).
-  local display = {}
-  for i, info in ipairs(candidates) do
-    local short = vim.fn.fnamemodify(info.name, ":t")
-    display[i] = string.format("%d: %s", i, short)
-  end
-
-  vim.ui.select(display, {
-    prompt = "buffer: ",
-    format_item = function(item)
-      return item
-    end,
-  }, function(choice)
-    if not choice then
-      return
-    end
-    local idx = tonumber(choice:match("^(%d+):"))
-    if idx and candidates[idx] and vim.api.nvim_buf_is_valid(candidates[idx].bufnr) then
-      vim.cmd("buffer " .. candidates[idx].bufnr)
-    end
-  end)
-end
-
---- Switch to the alternate (most recently viewed) buffer, toggling A<->B.
---- Emacs: `SPC b r` -> `my/switch-to-other-buffer`
-function M.switch_previous_buffer()
-  local alt = vim.fn.bufnr("#")
-  if alt == -1 or not vim.api.nvim_buf_is_valid(alt) then
-    vim.notify("No previous buffer available", vim.log.levels.INFO)
-    return
-  end
-  vim.cmd("buffer " .. alt)
+  pcall(vim.cmd, "close")
 end
 
 --- Jump to a mark (global or local), recording the pre-jump position in the

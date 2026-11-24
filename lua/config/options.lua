@@ -80,23 +80,33 @@ vim.opt.fillchars = { eob = " ", vert = "╎" } -- change the char at end of buf
 -- vim.opt.winborder = "rounded" -- solid
 vim.opt.winborder = "single"	  -- https://neovim.io/doc/user/options.html#'winborder'
 
--- Cursor is handled by the terminal emulator (Ghostty), not by nvim.
--- Set 'guicursor' to the EMPTY STRING: nvim then draws no cursor of its own and
--- sends no cursor-shape escapes, so whatever Ghostty is configured to draw
--- (shape/blink/colour) applies unconditionally.  Do NOT use `vim.opt.guicursor
--- = ""` here expecting a reset — an empty value is the documented way to
--- disable nvim's cursor shaping (see :h 'guicursor').
-vim.opt.guicursor = ""
+-- Cursor SHAPE + BLINK is handled entirely by nvim's 'guicursor'.
+-- (Cursor COLOUR per mode is handled by config/cursor.lua via OSC 12, since
+--  'guicursor' cannot express colour.)
+--
+--   n-v-c : solid block, blinking      (normal / visual)
+--   i-ci  : thin vertical bar, blinking (insert)
+--   r-cr  : horizontal bar              (replace)
+--   (no `t:` entry — terminal-mode shape is handled by config/cursor.lua via a
+--    direct DECSCUSR escape.  If `t:` is present, nvim ALSO emits its own shape
+--    right after ours and overrides it; see the note below.)
+--
+-- NOTE: 'guicursor' has no "hollow block" token (only block/hor/ver/underline),
+-- so normal mode is a SOLID block.  Ghostty's `cursor-style = block_hollow` only
+-- applies while nvim is not specifying a shape.
+-- IMPORTANT: every mode we care about must be listed explicitly — an OMITTED
+-- mode defaults to a solid `block` (see :h 'guicursor', "Default is block for
+-- each mode").  That is why terminal mode previously stayed a block even though
+-- insert was a bar.  `t:` mirrors `i-ci:`.
+-- NOTE: `t:` is deliberately ABSENT.  With a `t:` entry nvim emits its own
+-- DECSCUSR for terminal buffers, and in a captured TTY trace it writes
+-- `ESC[2 q` immediately AFTER config/cursor.lua's `ESC[6 q`, overriding it — so
+-- terminal mode always ended up a block.  Leaving `t:` out means nvim emits
+-- nothing for terminals and cursor.lua's escape is the one that sticks.
+-- No blinking: `blinkon0` disables the blink for every mode.  (Per :h
+-- 'guicursor', when any blink number is zero there is no blinking.)
+vim.opt.guicursor = "n-v-c:block-blinkon0,i-ci:ver25-blinkon0,r-cr:hor20-blinkon0"
 
--- Also blank the terminfo cursor-shape capabilities.  nvim emits t_Ss when it
--- wants a shaped cursor and t_Se to END that shape; on every redraw it can
--- re-send t_Se, which resets the terminal's cursor to its configured default.
--- That is what made a visual/insert shape snap back to Ghostty's hollow block
--- as soon as the cursor moved.  Clearing both leaves config/cursor.lua as the
--- only writer of DECSCUSR, so shapes persist until we change them.
--- NOTE: terminfo options are NOT addressable as `vim.o.t_Ss` (that raises
--- "Unknown option"); they must be set with `:set`.
-vim.cmd("set t_Ss= t_Se=")
 
 -- (previous cursor experiments, kept for reference)
 -- vim.opt.guicursor = "n-v-c-sm:block,i-ci-ve:ver25,r-cr-o:hor20"

@@ -194,7 +194,14 @@ vim.keymap.set("t", "<C-l>", [[<Cmd>bnext<CR>]], { desc = "Terminal next buffer"
 local function exit_terminal_mode()
   vim.cmd("stopinsert")
   pcall(function()
-    require("config.cursor").apply("n")
+    local cursor = require("config.cursor")
+    -- Tell the ModeChanged handler to stand down for this transition, otherwise
+    -- it re-applies the INSERT colour (mode is still reported as "nt") and
+    -- undoes the normal colour set just below.
+    if cursor.suppress_next then
+      cursor.suppress_next()
+    end
+    cursor.apply("n")
   end)
 end
 

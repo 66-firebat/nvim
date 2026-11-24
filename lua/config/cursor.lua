@@ -1,70 +1,67 @@
 -- =============================================================================
---  cursor.lua — per-mode terminal cursor colour & shape (OSC / DECSCUSR)
+--  cursor.lua — per-mode terminal cursor COLOUR (OSC 12)
 --
---  Port of emacs/evil-cursor.el.  When nvim runs inside a terminal that supports
---  OSC 12 (cursor colour) and DECSCUSR (cursor shape), this changes the visible
---  cursor on every mode change:
+--  Port of emacs/evil-cursor.el, split in two because nvim offers two separate
+--  mechanisms and only one of them can do colour:
 --
---      normal  -> hollow block, #ff4400   (reset: Ghostty's `cursor-style`)
---      visual  -> underline,    #1bfd9c
---      insert  -> bar,          #d3d3d3
+--    SHAPE + BLINK  -> 'guicursor'  (see lua/config/options.lua)
+--    COLOUR         -> this module  (OSC 12, via nvim_ui_send)
 --
---  All three BLINK (DECSCUSR 1/3/5 are the blinking variants).
+--  'guicursor' has no colour syntax, and DECSCUSR (the shape escape) proved
+--  unreliable under Ghostty, so shape is left entirely to nvim while colour is
+--  sent here.  They do not conflict: nvim never emits OSC 12, and this module
+--  never emits DECSCUSR.
+--
+--      normal   -> #ff4400   (accent orange)
+--      visual   -> #1bfd9c   (green)
+--      insert   -> #d3d3d3   (light grey)
+--      terminal -> #d3d3d3   (same as insert — terminal mode is morally insert)
 --
 --  HOW IT WORKS
 --  `vim.api.nvim_ui_send()` (nvim >= 0.12) writes raw bytes straight to the TUI
---  host terminal — the equivalent of Emacs' `send-string-to-terminal`.  This is
---  the ONLY correct way to talk to the outer terminal: `io.stdout:write()` and
---  `nvim_chan_send()` are wrong for a TUI (see :h nvim_ui_send()).
+--  host terminal — the equivalent of Emacs' `send-string-to-terminal`, and the
+--  documented way to talk to the outer terminal (`io.stdout:write()` and
+--  `nvim_chan_send()` are wrong for a TUI; see :h nvim_ui_send()).
 --
---  IMPORTANT — interaction with 'guicursor'
---  options.lua sets `vim.o.guicursor = ""`, which stops nvim emitting its own
---  cursor-shape escapes.  That is INTENTIONAL and compatible: we are the only
---  thing writing cursor escapes.  Do not set a non-empty 'guicursor' as well,
---  or nvim's escapes will fight ours.
---
---  IMPORTANT — hollow block is not addressable by DECSCUSR
---  The protocol has no code for a hollow block; Ghostty implements it as a
---  config-only style (`cursor-style = block_hollow`) and reports it as
---  DECSCUSR 1/2.  So normal mode sends **DECSCUSR 0** ("terminal default"),
---  which Ghostty restores to the style from its config file.  That is why the
---  Ghostty config must keep `cursor-style = block_hollow` for this to look
---  right (see git_repositories/ghostty/config).
+--  TERMINAL-MODE CAVEAT
+--  nvim reports terminal-JOB mode and terminal-NORMAL mode as the identical
+--  string "nt", so this module cannot tell them apart.  Leaving the terminal job
+--  is therefore handled in keymaps.lua (`exit_terminal_mode`), which calls
+--  `apply("n")` directly from the <Esc> / <C-;> mappings.
 --
 --  API:
 --      require("config.cursor").setup()        -- install the autocmds
---      require("config.cursor").apply(mode)    -- apply a style explicitly
---      require("config.cursor").reset()        -- restore terminal defaults
+--      require("config.cursor").apply(mode)    -- apply a colour explicitly
+--      require("config.cursor").reset()        -- restore the terminal default
 -- =============================================================================
 
 local M = {}
+
+-- When set, the next ModeChanged-driven colour update is skipped.  Leaving
+-- terminal-job mode (C-\\ C-n / <Esc>) is ambiguous: nvim reports "nt" both
+-- before and after, so the ModeChanged handler would re-apply the INSERT colour
+-- and immediately undo the mapping's `apply("n")`.  keymaps.lua calls
+-- `M.suppress_next()` before applying the normal colour to break that race.
+local suppress_next = false
+
+--- Skip the next ModeChanged colour update (used when leaving terminal mode).
+function M.suppress_next()
+  suppress_next = true
+end
 
 -- =============================================================================
 --  §1  Style table
 -- =============================================================================
 
---- DECSCUSR cursor-shape codes (`CSI Ps SP q`).
---- Even numbers are steady, odd numbers blink; 0 = terminal default.
-M.SHAPE = {
-  default = "0", -- terminal default (Ghostty: `cursor-style`)
-  block_blink = "1",
-  block = "2",
-  underline_blink = "3",
-  underline = "4",
-  bar_blink = "5",
-  bar = "6",
-}
-
---- Cursor appearance per nvim mode.
+--- Cursor COLOUR per nvim mode.
 ---   color = hex string for OSC 12, or nil to reset to the terminal default
----   shape = key into M.SHAPE
 M.styles = {
-  -- Default: Ghostty's own hollow-block style, your accent colour.
-  normal = { color = "#ff4400", shape = "default" },
-  -- Visual / select: green underline.
-  visual = { color = "#1bfd9c", shape = "underline_blink" },
-  -- Insert / replace: light-grey bar.
-  insert = { color = "#d3d3d3", shape = "bar_blink" },
+  -- Default / normal: accent orange.
+  normal = { color = "#ff4400" },
+  -- Visual / select: green.
+  visual = { color = "#1bfd9c" },
+  -- Insert / replace / terminal: light grey.
+  insert = { color = "#d3d3d3" },
 }
 
 -- =============================================================================
@@ -83,9 +80,13 @@ local function send_cursor_color(color)
   pcall(vim.api.nvim_ui_send, seq)
 end
 
---- Send DECSCUSR to set the cursor shape (see M.SHAPE).
---- Note the literal SPACE before `q` — required by the protocol.
----@param code string
+--- Send DECSCUSR to set the cursor SHAPE.
+--- Only used for TERMINAL buffers: nvim's own shape emission has been disabled
+--- for that path (see options.lua / `set t_Ss=`), because nvim was writing its
+--- own `ESC[2 q` immediately after ours and overriding it.  For every other
+--- buffer 'guicursor' handles the shape natively.
+--- DECSCUSR: 0=default 1=blink block 2=block 3=blink underline
+---           4=underline 5=blink bar 6=bar
 local function send_cursor_shape(code)
   pcall(vim.api.nvim_ui_send, "\27[" .. code .. " q")
 end
@@ -127,13 +128,24 @@ function M.apply(mode)
   local key = style_for_mode(mode)
   local style = M.styles[key] or M.styles.normal
   send_cursor_color(style.color)
-  send_cursor_shape(M.SHAPE[style.shape] or M.SHAPE.default)
+
+  -- TERMINAL buffers: nvim's shape emission is disabled for this path, so we
+  -- send DECSCUSR ourselves (a bar, matching insert).  Everywhere else
+  -- 'guicursor' owns the shape and we must NOT interfere.
+  local buf = vim.api.nvim_get_current_buf()
+  if vim.bo[buf].buftype == "terminal" then
+    if key == "insert" then
+      send_cursor_shape("6") -- steady bar (no blink)
+    else
+      send_cursor_shape("2") -- steady block, matching normal mode
+    end
+  end
 end
 
 --- Restore the terminal's own cursor (colour + shape).
 function M.reset()
   send_cursor_color(nil)
-  send_cursor_shape(M.SHAPE.default)
+  send_cursor_shape("0") -- hand the shape back to the terminal
 end
 
 -- =============================================================================
@@ -160,10 +172,15 @@ function M.setup()
         return
       end
 
-      -- NOTE: nvim reports both terminal-job mode and terminal-NORMAL mode as
-      -- "nt", so this handler cannot tell them apart.  The `t`-mode keymaps in
-      -- keymaps.lua handle leaving the terminal job explicitly
-      -- (exit_terminal_mode -> cursor.apply("n")).
+      -- Leaving terminal-job mode is handled by the `t`-mode keymaps in
+      -- keymaps.lua (they call M.suppress_next() then apply("n")).  Consume the
+      -- flag here so this handler does not immediately undo that with the
+      -- still-ambiguous "nt" live mode.
+      if suppress_next then
+        suppress_next = false
+        return
+      end
+
       vim.schedule(function()
         M.apply(vim.api.nvim_get_mode().mode)
       end)

@@ -221,6 +221,36 @@ return {
       },
     }
 
+    -- =====================================================================
+    --  Segment-B caps (glyphs placed at the START and END of segment B).
+    --  Tweak their fg / bg colors here.
+    -- =====================================================================
+    local cap_colors = {
+      -- Glyph at the START of segment B (A -> B transition).
+      start = { fg = '#2b2b2b', bg = '#ff4400' },
+      -- Glyph at the END of segment B (B -> C transition).
+      end_  = { fg = '#ff4400', bg = '#2b2b2b' },
+    }
+
+    -- The cap glyphs (󱗴).  Change these if you want a different arrow shape.
+    local cap_glyph_start = ''
+    local cap_glyph_end = ''
+
+    local start_cap = {
+      function()
+        return cap_glyph_start
+      end,
+      color = cap_colors.start,
+      padding = { left = 0, right = 0 },
+    }
+    local end_cap = {
+      function()
+        return cap_glyph_end
+      end,
+      color = cap_colors.end_,
+      padding = { left = 0, right = 0 },
+    }
+
     require('lualine').setup {
       options = {
         icons_enabled = false,
@@ -228,16 +258,20 @@ return {
         -- Some useful glyphs:
         -- https://www.nerdfonts.com/cheat-sheet
         --        
-        section_separators = { left = '', right = '' },
-        component_separators = { left = '', right = '' },
+        section_separators = { left = '', right = '' },
+        component_separators = { left = '', right = '' },
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,
       },
       -- lualine renders into statusline (bottom) as before; the tabs own winbar
       -- (top) via config/tabs.lua.
+      --
+      -- Segment-B caps: explicit glyph components placed at the START and END
+      -- of segment B.  Their colors are defined in `cap_colors` above (tweak
+      -- there).  `start_cap` / `end_cap` are the components used below.
       sections = {
         lualine_a = {filetype_icon},
-        lualine_b = {'location', get_git_branch, diagnostics},
+        lualine_b = {start_cap, 'location', get_git_branch, diagnostics, end_cap},
         lualine_c = {'searchcount', diff},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},

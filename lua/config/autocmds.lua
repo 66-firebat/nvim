@@ -63,8 +63,10 @@ api.nvim_create_autocmd(
   {
     pattern = { "*.txt", "*.md", "*.tex" },
     callback = function()
-      vim.opt.spell = true
-      vim.opt.spelllang = "en"
+      -- Use *local* options so spelling only affects this buffer.  Setting
+      -- `vim.opt.spell` (global) leaked spelling into every buffer.
+      vim.opt_local.spell = true
+      vim.opt_local.spelllang = "en"
     end,
   }
 )

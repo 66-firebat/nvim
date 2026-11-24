@@ -102,7 +102,7 @@ map("n", "<leader>e", M.broot_toggle, { desc = "Toggle broot at file dir" })
 -- map("n", "<M-e>", M.open_broot, { desc = "open broot" })
 
 -- Open Oil (writable file manager)
-map("n", "<M-e>", M.open_oil, { desc = "open oil" })
+map({ "n", "t" }, "<M-e>", M.open_oil, { desc = "open oil" })
 
 -- `s` -> fuzzy search the current buffer's lines (Emacs `s` / consult-line).
 map("n", "s", M.search_line_jump, { desc = "Search buffer lines" })
@@ -201,10 +201,37 @@ vim.keymap.set("n", "<C-l>", [[<Cmd>bnext<CR>]], opts)
 vim.keymap.set("n", "<C-h>", [[<Cmd>bprevious<CR>]], opts)
 
 -- Opens a vsplit terminal (current buffer left, terminal right).
-map("n", "<M-T>", M.terminal_vsplit, { desc = "Terminal in vsplit (right)" })
+map({ "n", "t" }, "<M-T>", M.terminal_vsplit, { desc = "Terminal in vsplit (right)" })
 
 -- Opens a numbered terminal ("<N>  terminal", Emacs M-t).
-map("n", "<M-t>", M.numbered_terminal, { desc = "Numbered terminal" })
+map({ "n", "t" }, "<M-t>", M.numbered_terminal, { desc = "Numbered terminal" })
+
+-- Buffer picker (Alt-i) — also available in terminal mode.
+map({ "n", "t" }, "<M-i>", function()
+  Snacks.picker.buffers({
+    win = {
+      input = {
+        keys = {
+          ["dd"] = "bufdelete",
+          ["<c-d>"] = { "bufdelete", mode = { "n", "i" } },
+        },
+      },
+      list = { keys = { ["dd"] = "bufdelete" } },
+    },
+  })
+end, { desc = "Buffers" })
+
+-- Kill the current buffer (Alt-k) — works in normal AND terminal mode.
+map({ "n", "t" }, "<M-k>", function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  -- Snacks.bufdelete handles terminals + last-window cases cleanly.
+  local ok = pcall(function()
+    require("snacks").bufdelete({ buf = bufnr })
+  end)
+  if not ok then
+    pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+  end
+end, { desc = "Kill current buffer" })
 
 -- Switch to alternate buffer
 vim.keymap.set({ "n", "t", "i" }, "<C-b>", [[<Cmd>b#<CR>]], { desc = "Switch to alternate buffer" })

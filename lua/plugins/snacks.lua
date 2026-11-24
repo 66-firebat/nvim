@@ -126,24 +126,8 @@ return {
       desc = "Search Notifications",
     },
     -- (removed) "<leader>e" was Snacks.explorer(); now bound to spawn_broot in keymaps.lua
-    -- find buffer
-    {
-      "<leader>o",
-      function()
-        Snacks.picker.buffers({
-          win = {
-            input = {
-              keys = {
-                ["dd"] = "bufdelete",
-                ["<c-d>"] = { "bufdelete", mode = { "n", "i" } },
-              },
-            },
-            list = { keys = { ["dd"] = "bufdelete" } },
-          },
-        })
-      end,
-      desc = "Buffers",
-    },
+    -- Buffer picker: now bound to <M-i> in keymaps.lua (so it also works in
+    -- terminal mode).  Not defined here to avoid a duplicate mapping.
     {
       "<leader>fc",
       function()

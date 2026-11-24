@@ -266,9 +266,17 @@ function M.oil_toggle()
     return
   end
 
-  -- Not in oil: open it at the current file's directory and remember the origin.
+  -- Not in oil: open it at the current directory and remember the origin.
   local source = bufnr
-  local dir = M.current_file_dir()
+  local dir
+  if vim.bo[bufnr].buftype == "terminal" then
+    -- Spawned from a terminal: use that terminal's LIVE working directory
+    -- (read from /proc/<pid>/cwd) rather than nvim's cwd.
+    dir = M.terminal_cwd(bufnr)
+  end
+  if not dir or dir == "" then
+    dir = M.current_file_dir()
+  end
   local ok = pcall(vim.cmd, "Oil " .. vim.fn.fnameescape(dir))
   if not ok then
     pcall(vim.cmd, "Oil")

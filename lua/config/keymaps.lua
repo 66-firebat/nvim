@@ -190,16 +190,21 @@ end)
 vim.keymap.set("t", "<C-h>", [[<Cmd>bprevious<CR>]], { desc = "Terminal previous buffer" })
 vim.keymap.set("t", "<C-l>", [[<Cmd>bnext<CR>]], { desc = "Terminal next buffer" })
 vim.keymap.set("t", "<C-;>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
+-- ESC in terminal mode -> leave terminal mode (go to normal mode).
+-- NOTE: this captures ESC for ALL terminal buffers, so programs that use ESC
+-- (vim/less/htop/broot inside the terminal) won't receive it.  Use <C-;> if
+-- you prefer to keep ESC for the program.
+vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { desc = "Exit terminal mode" })
 
 -- Navigate buffers without centering the cursor
 vim.keymap.set("n", "<C-l>", [[<Cmd>bnext<CR>]], opts)
 vim.keymap.set("n", "<C-h>", [[<Cmd>bprevious<CR>]], opts)
 
 -- Opens a vsplit terminal
-map("n", "<leader>tT", M.open_tmux_vsplit, { desc = "Windowed Tmux" })
+map("n", "<leader>tT", M.terminal_vsplit, { desc = "Terminal in vsplit (right)" })
 
--- Opens a terminal on a separate buffer
-map("n", "<leader>tt", M.open_tmux_terminal, { desc = "Windowed Tmux" })
+-- Opens a terminal on a separate buffer (numbered "<N>  terminal", Emacs M-t).
+map("n", "<leader>tt", M.numbered_terminal, { desc = "Numbered terminal" })
 
 -- Switch to alternate buffer
 vim.keymap.set({ "n", "t", "i" }, "<C-b>", [[<Cmd>b#<CR>]], { desc = "Switch to alternate buffer" })

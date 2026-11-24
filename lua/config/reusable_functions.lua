@@ -534,38 +534,38 @@ end
 --      indexed naming, without OSC 133 live-relabel)
 -- =============================================================================
 
---- Return the lowest unused terminal index (1, 2, 3, ...), scanning buffer
---- names for the `<N>` prefix.
---- Emacs: `my/ghostel-next-available`
+--- Return the lowest unused numbered-terminal index (1, 2, 3, ...).
+--- Scans terminal buffers tagged with `b:numbered_terminal_index` (set by
+--- `numbered_terminal`).  Emacs: `my/ghostel-next-available`.
 function M.next_terminal_index()
+  local used = {}
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    local ok, idx = pcall(vim.api.nvim_buf_get_var, bufnr, "numbered_terminal_index")
+    if ok and idx then
+      used[idx] = true
+    end
+  end
   local i = 1
-  while true do
-    local target = string.format("%d ", i)
-    local found = false
-    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-      local name = vim.api.nvim_buf_get_name(bufnr)
-      if name:match("^" .. vim.pesc(target)) then
-        found = true
-        break
-      end
-    end
-    if not found then
-      return i
-    end
+  while used[i] do
     i = i + 1
   end
+  return i
 end
 
---- Spawn a numbered terminal named "<N>  terminal".
+--- Spawn a numbered terminal named "<N>  terminal", tagged with a buffer-local
+--- `numbered_terminal_index` so index reuse is reliable.
 --- Emacs: `M-t` -> `my/ghostel-new-dispatch` (indexed naming only).
 function M.numbered_terminal()
   local index = M.next_terminal_index()
   local label = string.format("%d  terminal", index)
 
   vim.cmd("terminal")
-  -- Rename the freshly created terminal buffer (last buffer is the terminal).
   local bufnr = vim.api.nvim_get_current_buf()
-  vim.api.nvim_buf_set_name(bufnr, label)
+  -- Tag with the index (robust; independent of the buffer name).
+  vim.api.nvim_buf_set_var(bufnr, "numbered_terminal_index", index)
+  -- Rename using a `term://<label>` scheme so nvim keeps it as a non-file name
+  -- (a bare relative name would be resolved against cwd into an absolute path).
+  pcall(vim.api.nvim_buf_set_name, bufnr, "term://" .. label)
   vim.cmd("startinsert")
 end
 
@@ -597,6 +597,22 @@ end
 --- Open a vertical-split terminal (tmux).
 function M.open_tmux_vsplit()
   vim.cmd("vsplit | terminal tmux attach || tmux new-session")
+end
+
+--- Open a terminal in a vertical split: current buffer on the LEFT, terminal on
+--- the RIGHT, and focus the terminal.  The shell starts in the current file's
+--- directory.
+function M.terminal_vsplit()
+  local dir = M.current_file_dir()
+  -- vsplit puts the new window to the right (splitright is on).  Set that
+  -- window's local cwd (`:lcd`) so the shell starts there, then open a plain
+  -- `:terminal` (a bare :terminal launches $SHELL and stays alive).
+  vim.cmd("vsplit")
+  if dir and dir ~= "" and vim.fn.isdirectory(dir) == 1 then
+    pcall(vim.cmd, "lcd " .. vim.fn.fnameescape(dir))
+  end
+  vim.cmd("terminal")
+  vim.cmd("startinsert")
 end
 
 --- Open a horizontal-split terminal (tmux).

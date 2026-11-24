@@ -82,6 +82,10 @@ return {
           duration = { step = 100, total = 50 },
           easing = "linear",
         },
+        -- NOTE: do NOT include terminal buffers here.  snacks.scroll animates
+        -- via `:normal!` inside nvim_win_call on a timer; running that in a
+        -- terminal-mode buffer throws "Can't re-enter normal mode from
+        -- terminal mode".  Terminals are therefore excluded (default filter).
     },
     -- statuscolumn = { enabled = true },
     words = { enabled = true },

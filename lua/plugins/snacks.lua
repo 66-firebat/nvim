@@ -11,7 +11,7 @@ return {
         preview = "main",
         layout = {
           backdrop = false,
-          height = 0.3,
+          height = 0.5,
           position = "bottom",
           border = "none",
           box = "vertical",
@@ -44,7 +44,7 @@ return {
         preview = "main",
         layout = {
           backdrop = false,
-          height = 0.3,
+          height = 0.5,
           position = "bottom",
           border = "none",
           box = "vertical",

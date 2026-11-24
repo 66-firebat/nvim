@@ -213,8 +213,8 @@ local function render(winid)
     local label = tab_label(b, sel)
     local hl = sel and "TabSelected" or "TabUnselected"
     local cap_hl = sel and "TabCapSel" or "TabCapUnsel"
-    local sep = highlight(cap_hl, " ")
-    local sep_between = highlight(cap_hl, " ") .. highlight("TabSepSecond", "")
+    local sep = highlight(cap_hl, " ")
+    local sep_between = highlight(cap_hl, " ") .. highlight("TabSepSecond", "")
     segments[#segments + 1] = { label = label, sep = sep, sep_between = sep_between, bufnr = b, sel = sel }
   end
 
@@ -305,10 +305,10 @@ local function ensure_highlights()
     TabSelected      = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
     TabUnselected    = { fg = "#2b2b2b", bg = "#5c5c5c" },
     -- Right cap (`󱗴`) separated from the tab text, with its own highlight.
-    TabCapSel        = { fg = "#ff4400", bg = "#2b2b2b", bold = true },
-    TabCapUnsel      = { fg = "#5c5c5c", bg = "#2b2b2b" },
+    TabCapSel        = { fg = "#2b2b2b", bg = "#ff4400", bold = true },
+    TabCapUnsel      = { fg = "#2b2b2b", bg = "#5c5c5c" },
     -- Second separator glyph between tabs (independent highlight group).
-    TabSepSecond     = { fg = "#2b2b2b", bg = "#5c5c5c" },
+    TabSepSecond     = { fg = "#5c5c5c", bg = "#2b2b2b" },
     -- Powerline lead glyph: selected lead is orange; non-selected lead is dark.
     TabLeadSel       = { fg = "#ff4400", bg = "#8c8c8c", bold = true },
     TabLeadUnsel     = { fg = "#2b2b2b", bg = "#5c5c5c" },

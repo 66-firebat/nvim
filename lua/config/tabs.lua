@@ -55,24 +55,9 @@ local function group_icon(group)
   return GROUP_ICONS[group] or FALLBACK_ICON
 end
 
---- Return the icon for the CURRENT buffer's filetype (via nvim-web-devicons).
---- Return the icon for the current buffer's filetype, with a generic fallback
---- for unknown filetypes.  Custom icons (e.g. .hjson) are registered in
---- lua/plugins/nvim-web-devicons.lua.
+--- Filetype icon now lives in reusable_functions.lua (M.filetype_icon).
 local function current_file_icon(bufnr)
-  local ok, dev = pcall(require, "nvim-web-devicons")
-  if not ok or not dev or not dev.get_icon then
-    return "" -- generic file icon fallback
-  end
-  local name = vim.api.nvim_buf_get_name(bufnr)
-  local ft = vim.bo[bufnr].filetype
-  local icon = dev.get_icon(name, ft)
-  if icon and icon ~= "" then
-    return icon
-  end
-  -- Fallback: generic file icon for unknown filetypes (e.g. .hjson).
-  local def = dev.get_default_icon and dev.get_default_icon()
-  return (def and def.icon) or ""
+  return R.filetype_icon(bufnr)
 end
 
 -- =============================================================================

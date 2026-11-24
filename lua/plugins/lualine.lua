@@ -72,7 +72,7 @@ end
 
 function Get_buffer_stats()
   if vim.bo.buftype ~= "terminal" then return get_file_size() end
-  
+
   local root_pid = vim.b.terminal_job_pid
   if not root_pid then return "No PID" end
 
@@ -125,14 +125,13 @@ local function get_git_branch()
   return branch_name .. ' : ' .. branch_hash
 end
 
--- Buffer-count icon (same glyph the tabline uses for the group count).
-local function buffer_count()
+-- Filetype icon (same icon the tabline uses for the current file's type).
+local function filetype_icon()
   local ok, R = pcall(require, "config.reusable_functions")
-  if not ok or not R or not R.buffer_count_icon then
+  if not ok or not R or not R.filetype_icon then
     return ""
   end
-  local n = R.current_group_count()
-  return R.buffer_count_icon(n)
+  return R.filetype_icon()
 end
 
 -- --- EXAMPLE USAGE ---
@@ -188,8 +187,8 @@ return {
       }
       local my_custom_theme = {
         normal = {
-          a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#2b2b2b', bg = '#ff4400' },
+          a = { fg = '#ff4400', bg = '#2b2b2b', gui = 'bold' },
+          b = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
           c = { fg = '#903f16', bg = '#2b2b2b' },
           z = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
         },
@@ -229,7 +228,7 @@ return {
         -- Some useful glyphs:
         -- https://www.nerdfonts.com/cheat-sheet
         --        
-        section_separators = { left = '', right = '' },
+        section_separators = { left = '', right = '' },
         component_separators = { left = '', right = '' },
         -- disabled_filetypes = { 'alpha', 'neo-tree', 'explorer'},
         always_divide_middle = true,
@@ -237,9 +236,8 @@ return {
       -- lualine renders into statusline (bottom) as before; the tabs own winbar
       -- (top) via config/tabs.lua.
       sections = {
-        lualine_a = {buffer_count, 'location', get_git_branch, diagnostics},
-        -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
-        lualine_b = {},
+        lualine_a = {filetype_icon},
+        lualine_b = {'location', get_git_branch, diagnostics},
         lualine_c = {'searchcount', diff},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
@@ -257,4 +255,3 @@ return {
     }
   end,
 }
-

@@ -297,6 +297,25 @@ function M.current_group_count()
   return n
 end
 
+--- Return the filetype icon for a buffer (via nvim-web-devicons), with a
+--- generic fallback icon for unknown filetypes (e.g. .hjson).  Custom icons
+--- are registered in lua/plugins/nvim-web-devicons.lua.
+function M.filetype_icon(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  local ok, dev = pcall(require, "nvim-web-devicons")
+  if not ok or not dev or not dev.get_icon then
+    return "" -- generic file icon fallback
+  end
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  local ft = vim.bo[bufnr].filetype
+  local icon = dev.get_icon(name, ft)
+  if icon and icon ~= "" then
+    return icon
+  end
+  local def = dev.get_default_icon and dev.get_default_icon()
+  return (def and def.icon) or ""
+end
+
 --- Open Oil (the writable file manager).
 --- Emacs analogue: grease.el / dired / dirvish.
 function M.open_oil()
@@ -574,11 +593,11 @@ function M.setup_pane_glyphs()
   -- End-of-buffer fill char is already " " in options.lua; keep it.
   -- vim.opt.fillchars:append({ eob = " " })
 
-  -- Window divider color: orange fg, invisible bg.  In nvim 0.10+
+  -- Window divider color: light grey fg, invisible bg.  In nvim 0.10+
   -- `VertSplit` is linked to `WinSeparator`, so set the latter (and also
   -- VertSplit for older nvim / explicit overrides).
-  vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#ff4400", bg = "none" })
-  vim.api.nvim_set_hl(0, "VertSplit", { fg = "#ff4400", bg = "none" })
+  vim.api.nvim_set_hl(0, "WinSeparator", { fg = "#8c8c8c", bg = "none" })
+  vim.api.nvim_set_hl(0, "VertSplit", { fg = "#8c8c8c", bg = "none" })
 end
 
 return M

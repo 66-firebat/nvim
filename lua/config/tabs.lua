@@ -229,7 +229,19 @@ end
 --- force-inserted.  Members are listed in ASCENDING GLOBAL MRU RANK order;
 --- the current buffer is always rank #1, so it is naturally leftmost.
 local function render(winid)
-  local bufnr = vim.api.nvim_win_get_buf(winid)
+  -- While a Snacks picker is open, its PREVIEW window shows a merely-
+  -- highlighted buffer.  Display that buffer as the "current" tab so the
+  -- tabline tracks the preview, WITHOUT changing MRU order (design option b;
+  -- config/mru.lua suppresses reordering during previews).
+  local win_buf = vim.api.nvim_win_get_buf(winid)
+  local bufnr = win_buf
+  local preview = MRU.preview_buffer()
+  -- Only override when the previewed buffer is a real MRU member that belongs
+  -- to the same group as this window's buffer.  (The picker's own preview
+  -- window may hold an unrelated scratch buffer, which must be ignored.)
+  if preview and MRU.rank(preview) and group_for_buffer(preview) == group_for_buffer(win_buf) then
+    bufnr = preview
+  end
   local group = group_for_buffer(bufnr)
   local lnum = vim.api.nvim_win_get_cursor(winid)[1]
 

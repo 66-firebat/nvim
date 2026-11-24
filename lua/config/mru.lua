@@ -112,6 +112,49 @@ function M.add_to_tail(bufnr)
   end
 end
 
+--- Return true while a Snacks picker is open (any active picker).
+--- Used to suppress MRU reordering caused by the picker's PREVIEW: showing a
+--- buffer in a preview must not promote it to #1 (it isn't "use").  The tab bar
+--- still displays the previewed buffer as current via `M.preview_buffer()`.
+---@return boolean
+function M.is_picker_active()
+  local ok, snacks = pcall(require, "snacks")
+  if not ok then
+    return false
+  end
+  local ok2, pickers = pcall(function()
+    return snacks.picker.get()
+  end)
+  return ok2 and type(pickers) == "table" and #pickers > 0
+end
+
+--- Return the buffer currently shown in an open picker's PREVIEW window, or nil.
+--- render() treats this as the "current" buffer for display purposes only.
+---@return integer|nil
+function M.preview_buffer()
+  local ok, snacks = pcall(require, "snacks")
+  if not ok then
+    return nil
+  end
+  local ok2, pickers = pcall(function()
+    return snacks.picker.get()
+  end)
+  if not ok2 or type(pickers) ~= "table" then
+    return nil
+  end
+  for _, pk in ipairs(pickers) do
+    local pw = pk.preview and pk.preview.win
+    local winid = pw and pw.win
+    if winid and vim.api.nvim_win_is_valid(winid) then
+      local buf = pw.buf or vim.api.nvim_win_get_buf(winid)
+      if buf and vim.api.nvim_buf_is_valid(buf) then
+        return buf
+      end
+    end
+  end
+  return nil
+end
+
 --- Move BUFNR to the front of the MRU list.
 --- An untracked member is first appended, then promoted — so the `BufEnter`
 --- that accompanies opening a file makes it #1 immediately (design Q7+Q8).
@@ -119,6 +162,13 @@ end
 ---@param bufnr integer
 function M.touch(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  -- Do NOT reorder while a picker is open: its preview window fires BufEnter on
+  -- merely-highlighted buffers, which must not be promoted (design: preview is
+  -- not use).  The tab bar shows the previewed buffer via `preview_buffer()`.
+  if M.is_picker_active() then
+    return
+  end
 
   local i = index_of(bufnr)
   if i == 1 then

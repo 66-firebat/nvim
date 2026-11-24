@@ -416,27 +416,33 @@ end
 
 --- Fuzzy-search the current buffer's lines, seed the `/` register from the
 --- typed query (on picker close).  Emacs: `s` -> `my/consult-line-with-jump`.
+--- The picker is opened via `vim.schedule` so the mapping returns first and its
+--- first redraw isn't swallowed (otherwise it only paints on the next keypress).
 function M.search_line_jump()
   push_jump()
-  Snacks.picker.lines({
-    on_close = function(picker)
-      local q = picker.input and picker.input.filter and picker.input.filter.search
-      seed_search(q)
-    end,
-  })
+  vim.schedule(function()
+    Snacks.picker.lines({
+      on_close = function(picker)
+        local q = picker.input and picker.input.filter and picker.input.filter.search
+        seed_search(q)
+      end,
+    })
+  end)
 end
 
 --- Ripgrep the project (root = cwd), seed the `/` register from the typed query
 --- (on picker close).  Emacs: `S` -> `my/consult-ripgrep-with-jump`.
 function M.search_ripgrep_jump()
   push_jump()
-  Snacks.picker.grep({
-    cwd = vim.fn.getcwd(),
-    on_close = function(picker)
-      local q = picker.input and picker.input.filter and picker.input.filter.search
-      seed_search(q)
-    end,
-  })
+  vim.schedule(function()
+    Snacks.picker.grep({
+      cwd = vim.fn.getcwd(),
+      on_close = function(picker)
+        local q = picker.input and picker.input.filter and picker.input.filter.search
+        seed_search(q)
+      end,
+    })
+  end)
 end
 
 --- Operator-pending flash motion (nvim analog of Emacs `df`/`yf`/`cf`).

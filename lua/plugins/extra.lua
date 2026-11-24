@@ -177,10 +177,23 @@ return {
 
       -- Add/delete/replace surroundings (brackets, quotes, etc.)
       --
-      -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
-      -- - sd'   - [S]urround [D]elete [']quotes
-      -- - sr)'  - [S]urround [R]eplace [)] [']
-      require("mini.surround").setup()
+      -- Prefix is <C-s> (Ctrl-s) so bare `s` is NOT a prefix key
+      -- (bare `s` is bound to search-buffer-lines in keymaps.lua).
+      -- - <C-s>a iw) - surround add inner word paren
+      -- - <C-s>d '     - surround delete quote
+      -- - <C-s>r )'    - surround replace
+      require("mini.surround").setup({
+        mappings = {
+          add = "<C-s>a",
+          delete = "<C-s>d",
+          find = "<C-s>f",
+          find_left = "<C-s>F",
+          highlight = "<C-s>h",
+          replace = "<C-s>r",
+          suffix_last = "l",
+          suffix_next = "n",
+        },
+      })
 
       require("mini.pairs").setup()
 

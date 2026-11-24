@@ -98,11 +98,19 @@ end
 ---@param mode string
 ---@return string
 local function style_for_mode(mode)
-  -- mode() may be a multi-char string like "no", "nov", "niI", "cv", ...
+  -- mode() may be a multi-char string like "no", "nov", "niI", "cv", or "nt"
+  -- (the "n" there is the no-mouse flag, not normal mode).
   local first = mode:sub(1, 1)
+
+  -- Terminal mode: explicitly use the NORMAL style (a terminal has no text to
+  -- select, and the normal accent/hollow-block reads best while typing).
+  if first == "t" then
+    return "normal"
+  end
+
   if first == "i" or first == "R" then
     return "insert"          -- insert + replace
-  elseif first == "v" or first == "V" or first == "\22" or mode:sub(1, 1) == "s"
+  elseif first == "v" or first == "V" or first == "\22" or first == "s"
     or mode:sub(1, 2) == "no" or mode:sub(1, 2) == "ni" or first == "c" then
     -- visual, select, operator-pending, and cmdline all read as "visual"
     return "visual"
@@ -145,6 +153,19 @@ function M.setup()
         return
       end
       M.apply(new_mode)
+    end,
+  })
+
+  -- Terminal buffers: `ModeChanged` does NOT reliably fire when entering a
+  -- terminal (there is no real "normal -> terminal" text transition), so apply
+  -- the NORMAL style explicitly whenever we enter / spawn a terminal.  Per
+  -- design, terminal mode uses the same cursor as normal mode.
+  vim.api.nvim_create_autocmd({ "TermEnter", "TermOpen", "BufEnter" }, {
+    group = group,
+    callback = function(ev)
+      if ev.buf and vim.api.nvim_buf_is_valid(ev.buf) and vim.bo[ev.buf].buftype == "terminal" then
+        M.apply("n")
+      end
     end,
   })
 

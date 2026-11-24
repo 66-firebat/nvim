@@ -104,8 +104,10 @@ map("n", "<leader>e", M.broot_toggle, { desc = "Toggle broot at file dir" })
 -- Open Oil (writable file manager)
 map("n", "<M-e>", M.open_oil, { desc = "open oil" })
 
--- Exact-word search on Shift+S
-map("n", "S", M.exact_word_search, { desc = "Exact word search (prompt)" })
+-- `s` -> fuzzy search the current buffer's lines (Emacs `s` / consult-line).
+map("n", "s", M.search_line_jump, { desc = "Search buffer lines" })
+-- `S` -> ripgrep the project (Emacs `S` / consult-ripgrep).
+map("n", "S", M.search_ripgrep_jump, { desc = "Ripgrep project" })
 
 -- Open a terminal from the current Oil directory (oil buffer only)
 map("n", "<leader>cd", M.oil_open_terminal, { desc = "[oil]: open terminal in current directory" })

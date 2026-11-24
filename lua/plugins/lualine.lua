@@ -227,13 +227,13 @@ return {
       -- lualine renders into statusline (bottom) as before; the tabs own winbar
       -- (top) via config/tabs.lua.
       sections = {
-        lualine_a = {'location', get_git_branch, mode, diagnostics},
+        lualine_a = {'location', get_git_branch, diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {},
         lualine_c = {'searchcount', diff},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
-        lualine_z = { { 'buffers', mode = 3, symbols = { modified = ' 󱍸', alternate_file = '󱇴 ', }, } },
+        lualine_z = {},
       },
       inactive_sections = {
         lualine_a = {},

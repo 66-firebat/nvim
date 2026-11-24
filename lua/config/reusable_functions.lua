@@ -129,17 +129,33 @@ end
 --  §3  File managers / terminals
 -- =============================================================================
 
---- Spawn `broot` in a terminal, rooted at the current file/project dir.
---- Emacs: `M-e` -> `my/broot-default-directory` (broot branch)
-function M.open_broot()
-  -- Change directory to the current buffer's directory if possible.
-  pcall(vim.cmd, "cd %:h")
-
-  local ok, _ = pcall(vim.cmd, "terminal broot")
-  if not ok then
-    vim.cmd("terminal broot ~")
+--- Return the directory of the file currently focused in the window.
+--- Falls back to the global cwd when the buffer has no file (scratch/terminal).
+--- This is the canonical "where am I" for spawning file-manager / terminal tools.
+function M.current_file_dir()
+  local dir = vim.fn.expand("%:p:h")
+  if dir == "" or not vim.fn.isdirectory(dir) then
+    dir = vim.fn.getcwd()
   end
-  vim.cmd("startinsert")
+  return dir
+end
+
+--- Spawn `broot` in a terminal, rooted at the directory of the focused file.
+--- Opens in a SEPARATE split/buffer (never replaces the current file buffer).
+--- Emacs: `M-e` -> `my/broot-default-directory` (broot branch)
+function M.spawn_broot()
+  local dir = M.current_file_dir()
+  -- Launch broot in a terminal, rooted at `dir`.  Use `split` so the terminal
+  -- opens in its own window below the current one, leaving the file untouched.
+  -- (No `startinsert`: nvim :terminal buffers start in insert mode already, so
+  -- keys — including ESC — are passed straight through to broot.)
+  local cmd = string.format("split | terminal cd %s && exec broot", vim.fn.shellescape(dir))
+  vim.cmd(cmd)
+end
+
+--- Kept for backward compat: alias to spawn_broot.
+function M.open_broot()
+  M.spawn_broot()
 end
 
 --- Open Oil (the writable file manager).

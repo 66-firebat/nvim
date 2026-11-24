@@ -125,13 +125,7 @@ return {
       end,
       desc = "Search Notifications",
     },
-    {
-      "<leader>e",
-      function()
-        Snacks.explorer()
-      end,
-      desc = "File Explorer",
-    },
+    -- (removed) "<leader>e" was Snacks.explorer(); now bound to spawn_broot in keymaps.lua
     -- find buffer
     {
       "<leader>o",

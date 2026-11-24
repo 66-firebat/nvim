@@ -125,6 +125,16 @@ local function get_git_branch()
   return branch_name .. ' : ' .. branch_hash
 end
 
+-- Buffer-count icon (same glyph the tabline uses for the group count).
+local function buffer_count()
+  local ok, R = pcall(require, "config.reusable_functions")
+  if not ok or not R or not R.buffer_count_icon then
+    return ""
+  end
+  local n = R.current_group_count()
+  return R.buffer_count_icon(n)
+end
+
 -- --- EXAMPLE USAGE ---
 -- If you were using this in a lualine configuration, you would pass
 -- the function itself (not its result) to the sections table:
@@ -227,7 +237,7 @@ return {
       -- lualine renders into statusline (bottom) as before; the tabs own winbar
       -- (top) via config/tabs.lua.
       sections = {
-        lualine_a = {'location', get_git_branch, diagnostics},
+        lualine_a = {buffer_count, 'location', get_git_branch, diagnostics},
         -- lualine_b = {{ 'filetype', cond = hide_in_width }, diff},
         lualine_b = {},
         lualine_c = {'searchcount', diff},

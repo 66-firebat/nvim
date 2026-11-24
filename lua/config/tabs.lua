@@ -23,41 +23,17 @@
 
 local M = {}
 
+-- Shared reusable functions (filetype->group map, buffer_count_icon, etc.).
+local R = require("config.reusable_functions")
+
 -- =============================================================================
 --  Group categories (Emacs my/tab-group-categories -> nvim filetypes)
 -- =============================================================================
 
--- Groups: a label mapped to the list of nvim filetypes that belong to it.
--- Icons are hardcoded separately in GROUP_ICONS (no mini.icons dependency).
-local GROUPS = {
-  Code = {
-    "lua", "python", "go", "rust", "java", "c", "cpp", "javascript",
-    "typescript", "javascriptreact", "typescriptreact", "css", "scss", "html",
-    "json", "jsonc", "yaml", "sql", "nix", "sh", "bash", "zsh", "fish",
-    "vim", "ruby", "php", "kotlin", "swift", "haskell",
-  },
-  FileMgr = { "oil" },
-  Docs = { "markdown", "text", "org", "rst", "latex", "tex" },
-  Config = { "conf", "dotenv", "toml", "ini", "gitcommit", "gitrebase", "hjson", "json5", "jsonc" },
-  Terminal = { "terminal" },
-  Broot = { "broot" },
-  Tools = { "help", "fugitive", "fugitiveblame", "diff", "git", "man", "qf" },
-}
-
-local FALLBACK_GROUP = "Buffers"
-
---- Classify a buffer by its FILETYPE (no buftype).  Returns the group label,
---- or the fallback "Buffers" when the filetype is not in any group.
+-- Groups and filetype->group classification now live in
+-- config/reusable_functions.lua (M.group_for_buffer).  tabs.lua consumes it.
 local function group_for_buffer(bufnr)
-  local ft = vim.bo[bufnr].filetype or ""
-  for label, fts in pairs(GROUPS) do
-    for _, f in ipairs(fts) do
-      if f == ft then
-        return label
-      end
-    end
-  end
-  return FALLBACK_GROUP
+  return R.group_for_buffer(bufnr)
 end
 
 --- Hardcoded icon per group (no mini.icons dependency).  The fallback covers
@@ -191,19 +167,17 @@ local function tab_label(bufnr, selected)
 end
 
 --- Overflow icon (Emacs my/ct--overflow-str + my/ct--overflow-icons).
---- Maps a count 1..10+ to the Nerd Font glyph (1->󰲠, 2->󰲢, ..., 9->󰲰, 10+->󰲲).
---- 1-indexed: index 1 = count 1, etc.
-local overflow_icons = { "󰲠", "󰎧", "󰎪", "󰎭", "󰎱", "󰎳", "󰎶", "󰎹", "󰲰", "󰲲" }
+--- Maps a count 1..10+ to the Nerd Font glyph (moved to reusable_functions).
 local function overflow_str(n)
-  local idx = math.min(math.max(n, 1), 10)
-  return " " .. (overflow_icons[idx] or overflow_icons[10])
+  local icon = R.buffer_count_icon(math.max(n, 1))
+  return " " .. icon
 end
 
 --- Group icon segment (the line-number segment removed).
 --- The leading glyph is the overflow glyph for the NUMBER OF BUFFERS in the
---- current group (1->󰲠, 2->󰲢, ..., 9->󰲰, 10+->󰲲), matching Emacs MRU-tabs.el.
+--- current group, matching Emacs MRU-tabs.el.
 local function group_icon_segment(group, count, lnum)
-  local icon = overflow_icons[math.min(math.max(count, 1), 10)] or overflow_icons[10]
+  local icon = R.buffer_count_icon(count)
   return highlight("TabCountLead", "█")
     .. highlight("TabGroupIcon", icon .. " ")
 end

@@ -140,21 +140,161 @@ function M.current_file_dir()
   return dir
 end
 
---- Spawn `broot` in a terminal, rooted at the directory of the focused file.
---- Opens in a FULL-SIZE buffer (not a split) and focuses it.  The file buffer
---- stays in the buffer list, just hidden while broot is foreground.
---- Emacs: `M-e` -> `my/broot-default-directory` (broot branch)
-function M.spawn_broot()
-  local dir = M.current_file_dir()
-  -- `enew` opens a fresh full-size buffer, then `terminal` runs broot there and
-  -- nvim focuses it.  (No `startinsert`: :terminal starts in insert mode.)
-  local cmd = string.format("enew | terminal cd %s && exec broot", vim.fn.shellescape(dir))
-  vim.cmd(cmd)
+-- =============================================================================
+--  Broot smart dispatch (port of emacs/broot.el)
+-- =============================================================================
+
+-- Buffer-local variables set on a broot terminal buffer:
+--   b:broot        = true            -> this buffer is a broot session
+--   b:broot_source = <bufnr>         -> the buffer broot was spawned from
+local BROOT_VAR = "broot"
+local BROOT_SOURCE_VAR = "broot_source"
+
+--- Return true if BUFNR is a broot terminal session (buffer-local flag).
+--- This is more reliable than name-matching the term:// buffer name.
+function M.is_broot(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return false
+  end
+  if vim.bo[bufnr].buftype ~= "terminal" then
+    return false
+  end
+  local ok = pcall(vim.api.nvim_buf_get_var, bufnr, BROOT_VAR)
+  return ok and vim.api.nvim_buf_get_var(bufnr, BROOT_VAR) == true
 end
 
---- Kept for backward compat: alias to spawn_broot.
-function M.open_broot()
+--- Return the live cwd of a terminal buffer via /proc/<pid>/cwd (Linux).
+--- Equivalent of emacs/broot.el `my/broot-current-directory`.
+function M.terminal_cwd(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if vim.bo[bufnr].buftype ~= "terminal" then
+    return nil
+  end
+  local pid = vim.api.nvim_buf_get_var(bufnr, "terminal_job_pid")
+  if not pid then
+    return nil
+  end
+  local ok, cwd = pcall(vim.uv.fs_readlink, "/proc/" .. pid .. "/cwd")
+  if ok and cwd then
+    return cwd
+  end
+  return nil
+end
+
+--- Spawn `broot` in a FULL-SIZE terminal buffer rooted at the focused file's
+--- directory, recording the origin buffer so `broot_toggle` can return to it.
+--- Emacs: `my/broot--open` + `my/broot-source-buffer`.
+function M.spawn_broot()
+  local source_buf = vim.api.nvim_get_current_buf()
+  local dir = M.current_file_dir()
+
+  -- `enew` opens a fresh full-size buffer, then `terminal` runs broot there.
+  local cmd = string.format("enew | terminal cd %s && exec broot", vim.fn.shellescape(dir))
+  vim.cmd(cmd)
+
+  -- The newly created terminal buffer is now current; tag it as a broot
+  -- session and record its origin so the toggle can return to the source.
+  local broot_buf = vim.api.nvim_get_current_buf()
+  if vim.bo[broot_buf].buftype == "terminal" then
+    vim.api.nvim_buf_set_var(broot_buf, BROOT_VAR, true)
+    vim.api.nvim_buf_set_var(broot_buf, BROOT_SOURCE_VAR, source_buf)
+    vim.bo[broot_buf].filetype = "broot"
+  end
+end
+
+--- Toggle a broot session (Emacs `my/broot-default-directory`).
+--- If already in a broot buffer, close it and return to its source buffer.
+--- Otherwise spawn a fresh broot session at the focused file's directory.
+function M.broot_toggle()
+  local bufnr = vim.api.nvim_get_current_buf()
+  if M.is_broot(bufnr) then
+    -- Close broot and return to the buffer it was spawned from (Q2).
+    local source = nil
+    local ok = pcall(vim.api.nvim_buf_get_var, bufnr, BROOT_SOURCE_VAR)
+    if ok then
+      source = vim.api.nvim_buf_get_var(bufnr, BROOT_SOURCE_VAR)
+    end
+    -- Kill the broot terminal buffer (its process exits when the job dies).
+    vim.api.nvim_buf_delete(bufnr, { force = true })
+    if source and vim.api.nvim_buf_is_valid(source) then
+      vim.api.nvim_set_current_buf(source)
+    end
+    return
+  end
   M.spawn_broot()
+end
+
+-- Kept for backward compat: alias to broot_toggle.
+function M.open_broot()
+  M.broot_toggle()
+end
+
+-- =============================================================================
+--  §3b  Buffer-group classification + count icon (shared by tabs.lua & lualine)
+-- =============================================================================
+
+--- Groups: a label mapped to the list of nvim filetypes that belong to it.
+--- This is the canonical "filetype -> group" map, shared by the tabline and
+--- anything else that needs to classify buffers.
+local GROUPS = {
+  Code = {
+    "lua", "python", "go", "rust", "java", "c", "cpp", "javascript",
+    "typescript", "javascriptreact", "typescriptreact", "css", "scss", "html",
+    "json", "jsonc", "yaml", "sql", "nix", "sh", "bash", "zsh", "fish",
+    "vim", "ruby", "php", "kotlin", "swift", "haskell",
+  },
+  FileMgr = { "oil" },
+  Docs = { "markdown", "text", "org", "rst", "latex", "tex" },
+  Config = { "conf", "dotenv", "toml", "ini", "gitcommit", "gitrebase", "hjson", "json5", "jsonc" },
+  Terminal = { "terminal" },
+  Broot = { "broot" },
+  Tools = { "help", "fugitive", "fugitiveblame", "diff", "git", "man", "qf" },
+}
+
+local FALLBACK_GROUP = "Buffers"
+
+--- Classify a buffer by its FILETYPE.  Returns the group label, or the
+--- fallback "Buffers" when the filetype is not in any group.
+function M.group_for_buffer(bufnr)
+  local ft = vim.bo[bufnr].filetype or ""
+  for label, fts in pairs(GROUPS) do
+    for _, f in ipairs(fts) do
+      if f == ft then
+        return label
+      end
+    end
+  end
+  return FALLBACK_GROUP
+end
+
+--- Nerd Font glyphs for a buffer count (1->󰲠, 2->󰲢, ..., 9->󰲰, 10+->󰲲),
+--- matching Emacs MRU-tabs.el `my/ct--overflow-icons`.
+local overflow_icons = { "󰲠", "󰎧", "󰎪", "󰎭", "󰎱", "󰎳", "󰎶", "󰎹", "󰲰", "󰲲" }
+
+--- Return the Nerd Font glyph for a buffer count (1..10+).
+function M.buffer_count_icon(count)
+  return overflow_icons[math.min(math.max(count, 1), 10)] or overflow_icons[10]
+end
+
+--- Return the number of LISTED buffers that share the active buffer's group.
+--- (lualine and the tabline both use this so their counts stay in sync.)
+function M.current_group_count()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local group = M.group_for_buffer(bufnr)
+  local n = 0
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(b) and vim.bo[b].buflisted then
+      local name = vim.api.nvim_buf_get_name(b)
+      local bname = vim.fn.bufname(b)
+      if name ~= "" and bname ~= "[No Name]" and not bname:match("^%*") then
+        if M.group_for_buffer(b) == group then
+          n = n + 1
+        end
+      end
+    end
+  end
+  return n
 end
 
 --- Open Oil (the writable file manager).

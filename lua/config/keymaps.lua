@@ -95,8 +95,8 @@ map("n", "<leader>rr", "<Plug>SlimeMotionSend}}", {
 -- FILE MANAGEMENT
 -- map('n', '<leader>e', "<cmd>Fyler<cr>", { desc = 'Open Oil' })
 
--- Spawn broot at the current file's directory (displaces Snacks explorer).
-map("n", "<leader>e", M.spawn_broot, { desc = "Spawn broot at file dir" })
+-- Toggle broot at the current file's directory (displaces Snacks explorer).
+map("n", "<leader>e", M.broot_toggle, { desc = "Toggle broot at file dir" })
 
 -- Open broot in a terminal (commented out; oil is the active file manager)
 -- map("n", "<M-e>", M.open_broot, { desc = "open broot" })

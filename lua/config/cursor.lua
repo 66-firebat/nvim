@@ -80,17 +80,6 @@ local function send_cursor_color(color)
   pcall(vim.api.nvim_ui_send, seq)
 end
 
---- Send DECSCUSR to set the cursor SHAPE.
---- Only used for TERMINAL buffers: nvim's own shape emission has been disabled
---- for that path (see options.lua / `set t_Ss=`), because nvim was writing its
---- own `ESC[2 q` immediately after ours and overriding it.  For every other
---- buffer 'guicursor' handles the shape natively.
---- DECSCUSR: 0=default 1=blink block 2=block 3=blink underline
----           4=underline 5=blink bar 6=bar
-local function send_cursor_shape(code)
-  pcall(vim.api.nvim_ui_send, "\27[" .. code .. " q")
-end
-
 -- =============================================================================
 --  §3  Public API
 -- =============================================================================
@@ -127,25 +116,16 @@ function M.apply(mode)
   mode = mode or vim.api.nvim_get_mode().mode
   local key = style_for_mode(mode)
   local style = M.styles[key] or M.styles.normal
+  -- COLOUR ONLY.  Cursor SHAPE is owned entirely by 'guicursor' (options.lua);
+  -- this module must never send DECSCUSR, because nvim re-emits its own shape
+  -- on every redraw and the two would fight (see BUGS.md #1 for why terminal
+  -- buffers cannot get a distinct shape via `guicursor`'s `t:` entry).
   send_cursor_color(style.color)
-
-  -- TERMINAL buffers: nvim's shape emission is disabled for this path, so we
-  -- send DECSCUSR ourselves (a bar, matching insert).  Everywhere else
-  -- 'guicursor' owns the shape and we must NOT interfere.
-  local buf = vim.api.nvim_get_current_buf()
-  if vim.bo[buf].buftype == "terminal" then
-    if key == "insert" then
-      send_cursor_shape("5") -- blinking bar (matches guicursor blinking)
-    else
-      send_cursor_shape("1") -- blinking block, matching normal mode
-    end
-  end
 end
 
 --- Restore the terminal's own cursor (colour + shape).
 function M.reset()
   send_cursor_color(nil)
-  send_cursor_shape("0") -- hand the shape back to the terminal
 end
 
 -- =============================================================================
@@ -194,20 +174,6 @@ function M.setup()
   -- Only force the insert style while the terminal JOB actually owns the keys
   -- (mode contains "t").  If you are in terminal-NORMAL mode inside a terminal
   -- buffer (after C-\ C-n / <Esc>) the normal style must apply instead.
-  vim.api.nvim_create_autocmd({ "TermEnter", "TermOpen", "BufEnter" }, {
-    group = group,
-    callback = function(ev)
-      if not (ev.buf and vim.api.nvim_buf_is_valid(ev.buf)) then
-        return
-      end
-      if vim.bo[ev.buf].buftype ~= "terminal" then
-        return
-      end
-      vim.schedule(function()
-        M.apply(vim.api.nvim_get_mode().mode)
-      end)
-    end,
-  })
 
   -- Leaving nvim: hand the cursor back to the terminal so Ghostty isn't left
   -- showing (e.g.) the grey insert bar after you quit.

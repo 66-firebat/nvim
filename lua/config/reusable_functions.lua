@@ -627,7 +627,35 @@ function M.numbered_terminal()
   local index = M.next_terminal_index()
   local label = string.format("%d  terminal", index)
 
-  vim.cmd("terminal")
+  -- Start the shell in the directory of the buffer we spawned from:
+  --   * a terminal buffer -> that terminal's LIVE cwd (/proc/<pid>/cwd), so
+  --     spawning a terminal from a terminal keeps you where you were;
+  --   * any other buffer  -> the focused file's directory (falls back to cwd).
+  local source = vim.api.nvim_get_current_buf()
+  local dir
+  if vim.bo[source].buftype == "terminal" then
+    dir = M.terminal_cwd(source)
+  end
+  if not dir or dir == "" then
+    dir = M.current_file_dir()
+  end
+
+  -- IMPORTANT: `:lcd` does NOT reliably influence where `:terminal` starts the
+  -- shell (verified: getcwd() reported the target while the shell's
+  -- /proc/<pid>/cwd stayed at the old directory).  So cd explicitly inside the
+  -- spawned shell and `exec` it, which keeps the process alive — the same
+  -- pattern M.spawn_broot uses.
+  local shell = vim.o.shell ~= "" and vim.o.shell or (vim.env.SHELL or "sh")
+  if dir and dir ~= "" and vim.fn.isdirectory(dir) == 1 then
+    vim.cmd(
+      "terminal "
+        .. shell
+        .. " -c "
+        .. vim.fn.shellescape("cd " .. dir .. " && exec " .. shell)
+    )
+  else
+    vim.cmd("terminal")
+  end
   local bufnr = vim.api.nvim_get_current_buf()
   -- Tag with the index (robust; independent of the buffer name).
   vim.api.nvim_buf_set_var(bufnr, "numbered_terminal_index", index)

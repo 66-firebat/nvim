@@ -135,9 +135,9 @@ function M.apply(mode)
   local buf = vim.api.nvim_get_current_buf()
   if vim.bo[buf].buftype == "terminal" then
     if key == "insert" then
-      send_cursor_shape("6") -- steady bar (no blink)
+      send_cursor_shape("5") -- blinking bar (matches guicursor blinking)
     else
-      send_cursor_shape("2") -- steady block, matching normal mode
+      send_cursor_shape("1") -- blinking block, matching normal mode
     end
   end
 end

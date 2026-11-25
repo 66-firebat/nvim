@@ -103,9 +103,16 @@ vim.opt.winborder = "single"	  -- https://neovim.io/doc/user/options.html#'winbo
 -- `ESC[2 q` immediately AFTER config/cursor.lua's `ESC[6 q`, overriding it — so
 -- terminal mode always ended up a block.  Leaving `t:` out means nvim emits
 -- nothing for terminals and cursor.lua's escape is the one that sticks.
--- No blinking: `blinkon0` disables the blink for every mode.  (Per :h
--- 'guicursor', when any blink number is zero there is no blinking.)
-vim.opt.guicursor = "n-v-c:block-blinkon0,i-ci:ver25-blinkon0,r-cr:hor20-blinkon0"
+-- Blinking is ALLOWED: explicit blink timings are supplied for every mode so
+-- nvim requests the blinking DECSCUSR variants (1/3/5) and keeps the cursor
+-- blinking in both nvim and the outer terminal.
+-- (Per :h 'guicursor', any blink number being zero means NO blinking, so all
+-- three of blinkwait/blinkon/blinkoff are given non-zero values.)
+-- blinkon/blinkoff DOUBLED (400/250 -> 800/500), i.e. one full on+off cycle is
+-- 1300ms instead of 650ms, so the blink is half as frequent.
+vim.opt.guicursor = "n-v-c:block-blinkwait700-blinkon800-blinkoff500,"
+  .. "i-ci:ver25-blinkwait700-blinkon800-blinkoff500,"
+  .. "r-cr:hor20-blinkwait700-blinkon800-blinkoff500"
 
 
 -- (previous cursor experiments, kept for reference)

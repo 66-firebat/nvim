@@ -249,9 +249,20 @@ function M.oil_toggle()
   local bufnr = vim.api.nvim_get_current_buf()
 
   if M.is_oil(bufnr) then
-    -- Close the oil buffer.  We still RECORD the source on open (b:oil_source)
-    -- but do NOT force a return to it here — callers may use the tracked
-    -- origin buffer themselves.  Just delete and let nvim pick the buffer.
+    -- Close the oil buffer and return to the buffer oil was spawned from.
+    -- We must switch the CURRENT WINDOW away from the oil buffer BEFORE
+    -- deleting it: deleting the current buffer of a split window collapses
+    -- the split (closes the pane).  Restore the originating buffer first,
+    -- then wipe the oil buffer (it is no longer displayed).
+    local ok_src, source = pcall(vim.api.nvim_buf_get_var, bufnr, OIL_SOURCE_VAR)
+    if ok_src and source and vim.api.nvim_buf_is_valid(source) and source ~= bufnr then
+      pcall(vim.api.nvim_win_set_buf, 0, source)
+    else
+      -- No valid source (e.g. oil opened directly / no var set): fall back
+      -- to the alternate/previous buffer so the window does not close.
+      pcall(vim.cmd, "silent! bprevious")
+    end
+    -- Now safe to wipe the oil buffer; it is no longer current in this window.
     pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
     return
   end

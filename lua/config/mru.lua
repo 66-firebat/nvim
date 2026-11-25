@@ -639,6 +639,28 @@ function M.pick_buffers()
     for _, bufnr in ipairs(live) do
       local filename = vim.api.nvim_buf_get_name(bufnr)
       local name = buffer_display_name(bufnr)
+      local rank = tostring(rank_at[bufnr] or 0)
+
+      -- Build the searchable `text` so the MRU rank (the visible index) is
+      -- searchable, but the terminal's `term://N ...` index is NOT.
+      --
+      -- `numbered_terminal()` renames terminal buffers to `term://<N>  terminal`,
+      -- where N is the numbered-terminal INDEX — a DIFFERENT numbering than the
+      -- MRU rank.  Keeping `term://N` in `text` means typing a digit matches BOTH
+      -- the rank AND the stale term:// index, so e.g. the buffer displayed as
+      -- rank 2 can still match query `3` (because its hidden term:// name holds
+      -- a different digit).  Strip the term:// scheme + index so only the rank
+      -- digit (and the display name) drive matching.
+      local searchable_name
+      if vim.bo[bufnr].buftype == "terminal" then
+        -- `name` is already the foreground program (bash/pi/...); do NOT
+        -- append the `term://N` filename.
+        searchable_name = name
+      else
+        -- Files/oil keep their path so path search still works.
+        searchable_name = name .. " " .. filename
+      end
+
       out[#out + 1] = {
         buf = bufnr,
         rank = rank_at[bufnr] or 0,
@@ -648,7 +670,8 @@ function M.pick_buffers()
         file = name,
         buftype = vim.bo[bufnr].buftype,
         filetype = vim.bo[bufnr].filetype,
-        text = table.concat({ tostring(rank_at[bufnr] or 0), name, filename }, " "),
+        -- rank digit stays FIRST so typing a number filters by index.
+        text = rank .. " " .. searchable_name,
       }
     end
     return out

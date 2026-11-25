@@ -588,7 +588,10 @@ function M.zoxide_query(filter)
 
   local results = {}
   for line in raw:gmatch("[^\n]+") do
-    local score, path = line:match("^(%d+%.?%d*)%s+(.+)$")
+    -- zoxide RIGHT-JUSTIFIES the score field, so most lines begin with
+    -- whitespace (e.g. " 376.0 /path").  Anchoring with "^%d" would silently
+    -- drop every entry except the top-scoring one, so allow leading spaces.
+    local score, path = line:match("^%s*(%d+%.?%d*)%s+(.+)$")
     if path then
       table.insert(results, { score = tonumber(score), path = path })
     end
@@ -596,50 +599,79 @@ function M.zoxide_query(filter)
   return results
 end
 
---- Zoxide directory travel.
---- In a terminal buffer: `cd` the terminal's shell to the selected directory.
---- In any other buffer: open Oil at the selected directory.
---- Emacs: `M-z` -> `my/zoxide-travel-dispatch`
+--- Zoxide directory travel — dispatch on the ORIGIN buffer.
+--- Emacs: `my/zoxide-travel-dispatch` (M-z) in keybinds.el.
+---
+---   terminal buffer -> `cd <dir> && clear` in that terminal's shell
+---   anything else   -> `:Oil <dir>` (oil replaces itself, see note below)
+---
+--- The origin buffer is captured BEFORE the picker opens and the action is
+--- performed against it afterwards (`nvim_buf_call`), because the picker steals
+--- focus.  Mirrors Emacs, which captures `origin-buffer` and re-checks
+--- `buffer-live-p` after selection.
+---
+--- NOTE on oil: `:Oil <dir>` creates a fresh oil buffer, but oil's
+--- `bufhidden = "wipe"` (lua/plugins/oil.lua) means the previous one is wiped
+--- immediately — so repeating M-z from inside oil never accumulates buffers.
 function M.zoxide_travel()
+  local origin = vim.api.nvim_get_current_buf()
+  local origin_is_term = vim.bo[origin].buftype == "terminal"
+  -- Capture the terminal channel now; the buffer may not be current later.
+  local chan = origin_is_term and vim.api.nvim_buf_get_var(origin, "terminal_job_id") or nil
+
   local results = M.zoxide_query("")
-
-  local items = {}
-  for _, r in ipairs(results) do
-    table.insert(items, string.format("%s  %s", r.score, r.path))
-  end
-
-  if #items == 0 then
-    vim.notify("No zoxide entries", vim.log.levels.INFO)
+  if #results == 0 then
+    vim.notify("zoxide: no entries", vim.log.levels.INFO)
     return
   end
 
-  vim.ui.select(items, {
-    prompt = "󰡦 : ",
-    format_item = function(item)
-      return item
-    end,
-  }, function(choice)
-    if not choice then
-      return
-    end
-    local path = choice:match("%d+%.?%d*%s+(.+)$") or choice:match("%s+(.+)$")
-    if not path then
-      return
-    end
-    path = vim.trim(path)
+  -- Build picker items: `     1234  /path` (score right-justified to width 6,
+  -- then two spaces, then the path) — matches Emacs' `ghostfire-consult-format`.
+  local items = {}
+  local by_display = {}
+  for _, r in ipairs(results) do
+    local display = string.format("%6d  %s", math.floor(r.score), r.path)
+    by_display[display] = r.path
+    items[#items + 1] = {
+      text = display,
+      path = r.path,
+      score = r.score,
+      -- `file` drives the icon/rendering; `text` drives fuzzy matching.
+      file = r.path,
+    }
+  end
 
-    if vim.bo.buftype == "terminal" then
-      -- cd the terminal's shell.
-      local chan = vim.b.terminal_job_id
-      if chan then
-        vim.api.nvim_chan_send(chan, "cd " .. vim.fn.shellescape(path) .. " && clear\n")
-      else
-        vim.notify("No terminal job id", vim.log.levels.WARN)
+  local picker
+  picker = require("snacks").picker.pick({
+    title = "Zoxide",
+    items = items,
+    -- Keep zoxide's own frecency ordering; Snacks would otherwise re-sort.
+    sort = false,
+    -- Render the score + path verbatim (no icon column shuffling).
+    format = function(item)
+      return { { item.text, "Normal" } }
+    end,
+    confirm = function(p, item)
+      p:close()
+      local dir = item and (item.path or by_display[item.text])
+      if not dir or dir == "" then
+        return
       end
-    else
-      require("oil").open(path)
-    end
-  end)
+      if origin_is_term then
+        -- cd the ORIGIN terminal's shell, then clear (Emacs: "cd %s && clear").
+        if not (chan and vim.api.nvim_buf_is_valid(origin)) then
+          vim.notify("zoxide: origin terminal is gone", vim.log.levels.WARN)
+          return
+        end
+        vim.api.nvim_chan_send(chan, "cd " .. vim.fn.shellescape(dir) .. " && clear\n")
+      else
+        -- Any non-terminal buffer (including oil): `:Oil` navigates/replaces
+        -- in place, so no oil buffer accumulation.
+        vim.cmd("Oil " .. vim.fn.fnameescape(dir))
+      end
+    end,
+  })
+  return picker
 end
 
 -- =============================================================================

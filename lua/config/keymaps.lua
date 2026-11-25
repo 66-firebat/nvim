@@ -102,6 +102,13 @@ map("n", "<leader>rr", "<Plug>SlimeMotionSend}}", {
 -- map({ "n", "t" }, "<M-e>", M.broot_toggle, { desc = "Toggle broot at file dir" })
 map({ "n", "t" }, "<M-e>", M.oil_toggle, { desc = "Toggle oil at file dir" })
 
+-- Zoxide directory travel (Emacs M-z / my/zoxide-travel-dispatch).
+-- NORMAL mode only: the picker needs a normal-mode context, and in a terminal
+-- buffer you reach normal mode with <Esc> first.
+--   terminal buffer -> cd's that terminal's shell
+--   anything else   -> opens oil at the chosen directory
+map("n", "<M-z>", M.zoxide_travel, { desc = "Zoxide travel" })
+
 -- `s` -> fuzzy search the current buffer's lines (Emacs `s` / consult-line).
 map("n", "s", M.search_line_jump, { desc = "Search buffer lines" })
 -- `S` -> ripgrep the project (Emacs `S` / consult-ripgrep).

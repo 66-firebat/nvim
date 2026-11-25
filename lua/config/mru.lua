@@ -63,9 +63,15 @@ function M.is_member(bufnr)
     return false
   end
 
+  -- Terminal buffers are members whenever they have a running job, EVEN while
+  -- their name is still the raw `term://...` form (numbered_terminal renames
+  -- them a moment later).  Without this a freshly spawned terminal reads as a
+  -- non-member during its TermOpen/BufEnter, so the winbar renders a "?" rank.
+  local is_term = vim.bo[bufnr].buftype == "terminal"
+
   -- Oil directory buffers are deliberately `buflisted = false`.
   local is_oil = vim.bo[bufnr].filetype == "oil"
-  if not is_oil and not vim.bo[bufnr].buflisted then
+  if not (is_oil or is_term) and not vim.bo[bufnr].buflisted then
     return false
   end
 
@@ -283,6 +289,16 @@ function M.rank(bufnr)
       end
     end
   end
+
+  -- Self-heal: the buffer is a legitimate member but was never added to `order`
+  -- (a race — e.g. a winbar renders between a terminal being created and its
+  -- TermOpen/BufEnter hook running).  Adopt it at the tail and report its rank
+  -- instead of returning nil, which surfaced as a "?" in the tab bar.
+  if M.is_member(bufnr) then
+    table.insert(order, bufnr)
+    return n + 1
+  end
+
   return nil
 end
 
@@ -484,6 +500,12 @@ function M.setup()
     callback = function(ev)
       M.touch(ev.buf)
       prog_cache[ev.buf] = nil
+      -- The previous winbar render may already have happened (before this
+      -- buffer was tracked), leaving a stale "?" rank on screen.  Force the
+      -- winbars to re-evaluate now that the terminal has a rank.
+      vim.schedule(function()
+        pcall(vim.api.nvim__redraw, { winbar = true, flush = true })
+      end)
     end,
   })
 

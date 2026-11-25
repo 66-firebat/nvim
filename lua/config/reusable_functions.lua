@@ -26,13 +26,47 @@ local M = {}
 function M.smart_other_window()
   local win_count = vim.fn.winnr("$")
   if win_count <= 1 then
-    -- Only one window: split right and show the most-recently-viewed buffer.
-    local alt = vim.fn.bufnr("#")
-    if alt == -1 or not vim.api.nvim_buf_is_valid(alt) then
-      alt = vim.api.nvim_get_current_buf()
+    -- Only one window: split right and show the alternate buffer.
+    --
+    -- Which buffer should the new window show?  Use the MRU list, NOT
+    -- `bufnr("#")`.
+    --
+    -- `#` is unreliable here: after spawning a terminal via
+    -- `bash -c 'cd ... && exec bash'`, nvim can leave the discarded wrapper
+    -- buffer as the alternate (buftype empty, buflisted false, raw `term://`
+    -- name), so `#` pointed at a ghost instead of the "other" real buffer.
+    -- The MRU list is the user-visible ordering, so the buffer to show is
+    -- simply the highest-ranked entry that isn't the current one.
+    local current = vim.api.nvim_get_current_buf()
+    local target
+    local ok, mru = pcall(require, "config.mru")
+    if ok then
+      for _, b in ipairs(mru.list()) do
+        if b ~= current then
+          target = b
+          break
+        end
+      end
     end
+    if not target then
+      local alt = vim.fn.bufnr("#")
+      if alt ~= -1 and alt ~= current and vim.api.nvim_buf_is_valid(alt) then
+        target = alt
+      end
+    end
+
     vim.cmd("vsplit")
-    vim.api.nvim_win_set_buf(0, alt)
+
+    if target then
+      vim.api.nvim_win_set_buf(0, target)
+      -- Focusing it makes it the most-recently-used buffer; `touch` moves it to
+      -- rank 1 and shifts the one we came from to 2, and the redraw makes both
+      -- winbars show the new order immediately.
+      if ok then
+        mru.touch(target)
+      end
+      pcall(vim.api.nvim__redraw, { winbar = true, flush = true })
+    end
   else
     vim.cmd("wincmd w")
   end

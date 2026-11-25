@@ -622,36 +622,42 @@ function M.pick_buffers()
   -- has focus and the original window is no longer "current".
   preview_origin_win = vim.api.nvim_get_current_win()
 
-  -- Snapshot the MRU order + ranks NOW.  The picker (and the act of entering
-  -- its window) can fire BufEnter, which would otherwise re-touch buffers and
-  -- shift ranks mid-render.  Snapshotting keeps the numbers stable while the
-  -- picker is open, which is what the user expects.
+  -- Build items lazily via a FINDER (not a frozen `items` snapshot), so the
+  -- list re-enumerates on every refresh.  Deleting a buffer (`dd`/`<c-d>`)
+  -- re-runs the finder and drops the deleted entry — no stale rows.
   --
   -- The CURRENT buffer (rank 1) IS listed: it is shown for reference.  The
   -- selection starts on rank 2 (see `initial_idx` below), so choosing a
   -- different buffer is one keypress away without hiding the current one.
-  local snapshot = M.list()
-  local rank_at = {}
-  for i, b in ipairs(M.list()) do
-    rank_at[b] = i
+  local function build_items()
+    local live = M.list()
+    local rank_at = {}
+    for i, b in ipairs(live) do
+      rank_at[b] = i
+    end
+    local out = {}
+    for _, bufnr in ipairs(live) do
+      local filename = vim.api.nvim_buf_get_name(bufnr)
+      local name = buffer_display_name(bufnr)
+      out[#out + 1] = {
+        buf = bufnr,
+        rank = rank_at[bufnr] or 0,
+        -- `name` is the raw buffer name (for matching); `file` drives the
+        -- icon/display and is our friendly short name.
+        name = filename,
+        file = name,
+        buftype = vim.bo[bufnr].buftype,
+        filetype = vim.bo[bufnr].filetype,
+        text = table.concat({ tostring(rank_at[bufnr] or 0), name, filename }, " "),
+      }
+    end
+    return out
   end
 
-  local items = {}
-  for _, bufnr in ipairs(snapshot) do
-    local filename = vim.api.nvim_buf_get_name(bufnr)
-    local name = buffer_display_name(bufnr)
-    items[#items + 1] = {
-      buf = bufnr,
-      rank = rank_at[bufnr] or 0,
-      -- `name` is the raw buffer name (for matching); `file` drives the
-      -- icon/display and is our friendly short name.
-      name = filename,
-      file = name,
-      buftype = vim.bo[bufnr].buftype,
-      filetype = vim.bo[bufnr].filetype,
-      text = table.concat({ tostring(rank_at[bufnr] or 0), name, filename }, " "),
-    }
-  end
+  -- Build the list ONCE to seed the initial cursor position.  The picker's
+  -- FINDER (below) re-runs `build_items` on every refresh, so deleting a
+  -- buffer (`dd`/`<c-d>`) re-enumerates and drops the stale entry.
+  local items = build_items()
 
   -- Row to select on open: the entry whose rank is 2 (i.e. switch to the
   -- previous buffer by default).  Falls back to 1 when there is only one
@@ -668,9 +674,13 @@ function M.pick_buffers()
   picker = require("snacks").picker.pick({
     -- NOTE: deliberately NO `source = "buffers"` — that would install Snacks'
     -- own buffers finder, which re-enumerates every buffer (sorted by
-    -- `lastused`) and discards our `items`.  With `items` set we own the list.
+    -- `lastused`) and discards our `items`.  With a custom FINDER we own the
+    -- list AND it re-runs on refresh (so `dd`/`<c-d>` deletions drop the entry).
     title = "Buffers (MRU)",
-    items = items,
+    -- Re-enumerate the MRU list on every refresh.  The built-in `bufdelete`
+    -- action calls `picker:refresh()` after deleting, which re-runs this finder
+    -- and rebuilds the list WITHOUT the just-deleted buffer.
+    finder = build_items,
     -- Preserve our finder order (ascending MRU rank); Snacks would otherwise
     -- re-sort scored items and destroy the MRU ordering.
     sort = false,

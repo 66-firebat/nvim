@@ -707,7 +707,7 @@ function M.numbered_terminal()
   -- Rename using a `term://<label>` scheme so nvim keeps it as a non-file name
   -- (a bare relative name would be resolved against cwd into an absolute path).
   pcall(vim.api.nvim_buf_set_name, bufnr, "term://" .. label)
-  vim.cmd("stopinsert")
+  vim.cmd("startinsert")
 end
 
 -- =============================================================================
@@ -753,7 +753,7 @@ function M.terminal_vsplit()
     pcall(vim.cmd, "lcd " .. vim.fn.fnameescape(dir))
   end
   vim.cmd("terminal")
-  vim.cmd("stopinsert")
+  vim.cmd("startinsert")
 end
 
 --- Open a horizontal-split terminal (tmux).

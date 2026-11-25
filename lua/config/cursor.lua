@@ -224,20 +224,20 @@ function M.setup()
     end,
   })
 
-  -- Force TERMINAL-NORMAL mode whenever a terminal buffer becomes current
+  -- Force TERMINAL-JOB mode whenever a terminal buffer becomes current
   -- (e.g. Alt+w shows an already-open terminal via `nvim_win_set_buf`).
-  -- `vim.fn.mode()` returns "t" in Terminal-Job mode and "n" in
-  -- Terminal-Normal mode, so we `stopinsert` whenever a terminal buffer is
-  -- current but still in job (insert) mode.  The <Esc>/<C-;> mappings from
-  -- keymaps.lua are unaffected: those already produce normal mode, and this
-  -- autocmd only runs on BufEnter/WinEnter, not on mode changes.
+  -- `vim.fn.mode()` returns "n" in Terminal-Normal mode and "t" in
+  -- Terminal-Job mode, so we `startinsert` whenever a terminal buffer is
+  -- current but still in normal mode.  This only runs on BufEnter/WinEnter,
+  -- not on mode changes, so a deliberate <Esc>/<C-;> drop to normal is not
+  -- immediately undone.
   vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
     group = group,
     callback = function()
-      if vim.bo.buftype == "terminal" and vim.fn.mode() == "t" then
+      if vim.bo.buftype == "terminal" and vim.fn.mode() ~= "t" then
         vim.schedule(function()
-          if vim.bo.buftype == "terminal" and vim.fn.mode() == "t" then
-            vim.cmd("stopinsert")
+          if vim.bo.buftype == "terminal" and vim.fn.mode() ~= "t" then
+            vim.cmd("startinsert")
           end
         end)
       end

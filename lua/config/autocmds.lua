@@ -369,8 +369,8 @@ vim.api.nvim_create_autocmd("TermOpen", {
     -- Force the statuscolumn to be inherited/set
     -- (Usually inherited globally, but TermOpen sometimes clears it)
     vim.opt_local.statuscolumn = vim.opt.statuscolumn:get()
-    -- Start in NORMAL mode (terminal-normal), not insert/job mode.
-    vim.cmd("stopinsert")
+    -- Start in TERMINAL-JOB mode (insert), so the terminal is ready to use.
+    vim.cmd("startinsert")
   end,
 })
 

@@ -125,13 +125,17 @@ local function get_git_branch()
   return branch_name .. ' : ' .. branch_hash
 end
 
--- Filetype icon (same icon the tabline uses for the current file's type).
-local function filetype_icon()
-  local ok, R = pcall(require, "config.reusable_functions")
-  if not ok or not R or not R.filetype_icon then
+-- Scrollbar-thumb icon: the 8-band Nerd Font slice glyph for the cursor's
+-- vertical position in the buffer (config/statuscolumn.lua `M.slice_icon`).
+-- Replaces the filetype icon that used to sit here; the filetype icon now
+-- lives in the tabline, between each tab's index and its filename.
+local function scrollbar_thumb()
+  local ok, SC = pcall(require, "config.statuscolumn")
+  if not ok or not SC or not SC.slice_icon then
     return ""
   end
-  return R.filetype_icon()
+  local icon = SC.slice_icon()
+  return icon or ""
 end
 
 -- --- EXAMPLE USAGE ---
@@ -270,7 +274,7 @@ return {
       -- of segment B.  Their colors are defined in `cap_colors` above (tweak
       -- there).  `start_cap` / `end_cap` are the components used below.
       sections = {
-        lualine_a = {filetype_icon},
+        lualine_a = {scrollbar_thumb},
         lualine_b = {start_cap, 'location', get_git_branch, diagnostics, end_cap},
         lualine_c = {'searchcount', diff},
         lualine_x = {function() return require("screenkey").get_keys() end },

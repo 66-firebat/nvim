@@ -128,6 +128,25 @@ function M.is_picker_active()
   return ok2 and type(pickers) == "table" and #pickers > 0
 end
 
+--- The TAB window that opened the buffer picker.  Only that window's winbar is
+--- allowed to follow the picker's preview; every other window keeps showing its
+--- own buffer/group.  Recorded by `M.pick_buffers()`.
+---@type integer|nil
+local preview_origin_win = nil
+
+--- Return the window that owns the picker's preview, or nil when no picker is
+--- open.  `render()` compares this against the window it is drawing for.
+---@return integer|nil
+function M.preview_origin_window()
+  if not M.is_picker_active() then
+    return nil
+  end
+  if preview_origin_win and vim.api.nvim_win_is_valid(preview_origin_win) then
+    return preview_origin_win
+  end
+  return nil
+end
+
 --- Return the buffer currently shown in an open picker's PREVIEW window, or nil.
 --- render() treats this as the "current" buffer for display purposes only.
 ---@return integer|nil
@@ -575,11 +594,21 @@ end
 function M.pick_buffers()
   local current = vim.api.nvim_get_current_buf()
 
+  -- Remember WHICH tab window opened the picker.  Only this window's winbar is
+  -- allowed to follow the preview; all other windows keep their own buffer.
+  -- Captured here because by the time the picker is shown, the picker's float
+  -- has focus and the original window is no longer "current".
+  preview_origin_win = vim.api.nvim_get_current_win()
+
   -- Snapshot the MRU order + ranks NOW.  The picker (and the act of entering
   -- its window) can fire BufEnter, which would otherwise re-touch buffers and
   -- shift ranks mid-render.  Snapshotting keeps the numbers stable while the
   -- picker is open, which is what the user expects.
-  local snapshot = M.list_excluding(current)
+  --
+  -- The CURRENT buffer (rank 1) IS listed: it is shown for reference.  The
+  -- selection starts on rank 2 (see `initial_idx` below), so choosing a
+  -- different buffer is one keypress away without hiding the current one.
+  local snapshot = M.list()
   local rank_at = {}
   for i, b in ipairs(M.list()) do
     rank_at[b] = i
@@ -600,6 +629,17 @@ function M.pick_buffers()
       filetype = vim.bo[bufnr].filetype,
       text = table.concat({ tostring(rank_at[bufnr] or 0), name, filename }, " "),
     }
+  end
+
+  -- Row to select on open: the entry whose rank is 2 (i.e. switch to the
+  -- previous buffer by default).  Falls back to 1 when there is only one
+  -- buffer.
+  local initial_row = 1
+  for i, it in ipairs(items) do
+    if it.rank == 2 then
+      initial_row = i
+      break
+    end
   end
 
   local picker
@@ -636,6 +676,9 @@ function M.pick_buffers()
       end)
     end,
     -- Confirm: switch to the buffer.
+    on_close = function()
+      preview_origin_win = nil
+    end,
     confirm = function(p, item)
       p:close()
       if item and item.buf and vim.api.nvim_buf_is_valid(item.buf) then
@@ -652,6 +695,21 @@ function M.pick_buffers()
       list = { keys = { ["dd"] = "bufdelete" } },
     },
   })
+
+  -- Seed the cursor row SYNCHRONOUSLY, before the first render.
+  --
+  -- Doing this in `on_show` (or via vim.schedule) meant the list painted once
+  -- with the cursor on rank 1 and only then jumped to rank 2 — a visible
+  -- flicker, and it briefly previewed the current buffer.  Setting the target
+  -- here records it on the list object before Snacks renders, so the very first
+  -- frame already has rank 2 selected (`list:set_target` stores a target that
+  -- `list:render` consumes on its first pass).
+  if picker and picker.list then
+    pcall(function()
+      picker.list:set_target(initial_row, 1, { force = true })
+    end)
+  end
+
   return picker
 end
 

@@ -201,7 +201,19 @@ local function tab_label(bufnr, selected)
   end
 
   local num = get_stable_number(bufnr)
-  local body = " " .. num .. "  " .. prefix .. name
+  -- Layout:  <index> <sep> <name> <sep> <filetype icon>
+  -- e.g.     1 <sep> bash <sep>   
+  -- The filetype icon sits at the END, after the name, separated by its own
+  -- separator.  (It used to live in lualine segment A; that slot now shows the
+  -- scrollbar-thumb slice icon instead.)
+  local icon = R.filetype_icon(bufnr)
+  local tail
+  if icon and icon ~= "" then
+    tail = "  " .. icon .. " "
+  else
+    tail = ""
+  end
+  local body = " " .. num .. "  " .. prefix .. name .. tail
   local hl = selected and "TabSelected" or "TabUnselected"
   return highlight(hl, body)
 end
@@ -235,12 +247,17 @@ local function render(winid)
   -- config/mru.lua suppresses reordering during previews).
   local win_buf = vim.api.nvim_win_get_buf(winid)
   local bufnr = win_buf
-  local preview = MRU.preview_buffer()
-  -- While a picker is open and previewing a REAL MRU member, the tab bar
-  -- follows the PREVIEW: it shows that buffer as current AND switches to that
-  -- buffer's GROUP (design option b).  So previewing a terminal from a Docs
-  -- window temporarily shows the Terminal group's tabs.  The picker's own
-  -- scratch/preview buffers are ignored via the `MRU.rank(preview)` check.
+  -- Only the window that OPENED the picker follows its preview.  Applying this
+  -- to every window made ALL split winbars show the previewed buffer's group,
+  -- which is wrong: a split showing an unrelated buffer must keep its own tabs.
+  local preview
+  if MRU.preview_origin_window() == winid then
+    preview = MRU.preview_buffer()
+  end
+  -- While this window owns an open picker previewing a REAL MRU member, the tab
+  -- bar follows the PREVIEW: it shows that buffer as current AND switches to
+  -- that buffer's GROUP (design option b).  The picker's own scratch/preview
+  -- buffers are ignored via the `MRU.rank(preview)` check.
   if preview and MRU.rank(preview) then
     bufnr = preview
   end

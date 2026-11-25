@@ -9,6 +9,12 @@ print("Config path: " .. vim.fn.stdpath("config")) ]]
 
 vim.g.mapleader = " "					-- change leader to a space
 vim.g.maplocalleader = " "				-- change localleader to a space
+
+-- Disable unused providers (was previously injected via programs.neovim).
+vim.g.loaded_node_provider = 0
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_ruby_provider = 0
+vim.g.loaded_python3_provider = 0
 require("core.lazy")
 require("config.options")
 require("config.keymaps")

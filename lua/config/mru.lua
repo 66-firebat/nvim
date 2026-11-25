@@ -674,6 +674,12 @@ function M.pick_buffers()
     -- Preserve our finder order (ascending MRU rank); Snacks would otherwise
     -- re-sort scored items and destroy the MRU ordering.
     sort = false,
+    -- Preview (and commit) in the PANEL that launched the picker, not a fixed
+    -- window.  `main = { current = true }` makes Snacks resolve `picker.main`
+    -- to `vim.api.nvim_get_current_win()` at picker-creation time — which is
+    -- still the origin panel (the picker float is shown later).  This keeps the
+    -- preview inside the launching split and leaves the other split untouched.
+    main = { current = true },
     -- Render: "<rank>  <icon><name>"  (rank replaces the raw bufnr).
     -- Uses the SNAPSHOT rank so the numbers stay stable while the picker is
     -- open (they re-sync on the next open).
@@ -697,14 +703,21 @@ function M.pick_buffers()
         pcall(vim.api.nvim__redraw, { winbar = true, flush = true })
       end)
     end,
-    -- Confirm: switch to the buffer.
+    -- Reset the origin tracking when the picker closes.
     on_close = function()
       preview_origin_win = nil
     end,
+    -- Confirm: switch to the buffer IN THE PANEL that launched the picker.
     confirm = function(p, item)
       p:close()
       if item and item.buf and vim.api.nvim_buf_is_valid(item.buf) then
-        vim.api.nvim_set_current_buf(item.buf)
+        -- Restore focus to the origin window (the picker float just closed) and
+        -- swap ITS buffer, leaving every other split untouched.
+        local target = preview_origin_win
+          and vim.api.nvim_win_is_valid(preview_origin_win)
+          and preview_origin_win
+          or vim.api.nvim_get_current_win()
+        pcall(vim.api.nvim_win_set_buf, target, item.buf)
       end
     end,
     win = {

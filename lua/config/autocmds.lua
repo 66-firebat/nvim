@@ -229,19 +229,9 @@ nvim_create_autocmd("InsertEnter", {
 
 nvim_create_autocmd("InsertLeave", {
   callback = function()
-    opt.listchars.trail = space
     nvim_set_hl(0, "TrailingWhitespace", { link = "Error" })
   end
 })
-
-vim.api.nvim_create_autocmd('BufEnter', {
-  callback = function()
-    vim.bo.shiftwidth = 2
-    vim.bo.tabstop = 2
-    vim.bo.softtabstop = 2
-  end
-})
-
 
 -- Optional: For new empty buffers, you might want to switch back to the global CWD
 -- or the home directory. The use of 'lcd' means the window keeps its CWD 
@@ -379,8 +369,8 @@ vim.api.nvim_create_autocmd("TermOpen", {
     -- Force the statuscolumn to be inherited/set
     -- (Usually inherited globally, but TermOpen sometimes clears it)
     vim.opt_local.statuscolumn = vim.opt.statuscolumn:get()
-    -- Enter into insert mode (prevents having to constantly enter Terminaol mode on buffer change)
-    vim.cmd("startinsert")
+    -- Start in NORMAL mode (terminal-normal), not insert/job mode.
+    vim.cmd("stopinsert")
   end,
 })
 

@@ -192,20 +192,54 @@ function M.setup()
     end,
   })
 
+  -- Re-apply the cursor EVERY time we enter a buffer, so shape + colour stay
+  -- aligned with the buffer's mode.  This fixes the stale-shape case where the
+  -- cursor is wrong after switching into a new buffer (e.g. the terminal's
+  -- DECSCUSR or a prior mode left the shape inconsistent).  Defer one tick so
+  -- the live mode reflects the buffer we just entered.
+  vim.api.nvim_create_autocmd("BufEnter", {
+    group = group,
+    callback = function()
+      vim.schedule(function()
+        M.apply()
+      end)
+    end,
+  })
+
   -- Terminal buffers: `ModeChanged` does NOT reliably fire when entering a
-  -- terminal (there is no real "normal -> terminal" text transition), so apply
-  -- the INSERT style explicitly whenever we enter / spawn a terminal.  Per
-  -- design, terminal mode uses the same cursor as insert mode (grey bar).
-  -- Only force the insert style while the terminal JOB actually owns the keys
-  -- (mode contains "t").  If you are in terminal-NORMAL mode inside a terminal
-  -- buffer (after C-\ C-n / <Esc>) the normal style must apply instead.
-  vim.api.nvim_create_autocmd({ "TermEnter", "TermOpen", "BufEnter" }, {
+  -- terminal (there is no real "normal -> terminal" text transition), and
+  -- `BufEnter` into a terminal reports the ambiguous "nt" mode, so force the
+  -- INSERT style explicitly whenever we enter / spawn a terminal.  Per design,
+  -- terminal mode uses the same cursor as insert mode (grey bar).  Only force
+  -- the insert style while the terminal JOB actually owns the keys (mode
+  -- contains "t"), otherwise the normal style must apply.
+  vim.api.nvim_create_autocmd({ "TermEnter", "TermOpen" }, {
     group = group,
     callback = function(ev)
       if ev.buf and vim.api.nvim_buf_is_valid(ev.buf)
         and vim.bo[ev.buf].buftype == "terminal"
         and vim.api.nvim_get_mode().mode:find("t", 1, true) then
         M.apply("t")
+      end
+    end,
+  })
+
+  -- Force TERMINAL-NORMAL mode whenever a terminal buffer becomes current
+  -- (e.g. Alt+w shows an already-open terminal via `nvim_win_set_buf`).
+  -- `vim.fn.mode()` returns "t" in Terminal-Job mode and "n" in
+  -- Terminal-Normal mode, so we `stopinsert` whenever a terminal buffer is
+  -- current but still in job (insert) mode.  The <Esc>/<C-;> mappings from
+  -- keymaps.lua are unaffected: those already produce normal mode, and this
+  -- autocmd only runs on BufEnter/WinEnter, not on mode changes.
+  vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+    group = group,
+    callback = function()
+      if vim.bo.buftype == "terminal" and vim.fn.mode() == "t" then
+        vim.schedule(function()
+          if vim.bo.buftype == "terminal" and vim.fn.mode() == "t" then
+            vim.cmd("stopinsert")
+          end
+        end)
       end
     end,
   })

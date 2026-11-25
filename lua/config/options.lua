@@ -110,9 +110,15 @@ vim.opt.winborder = "single"	  -- https://neovim.io/doc/user/options.html#'winbo
 -- three of blinkwait/blinkon/blinkoff are given non-zero values.)
 -- blinkon/blinkoff DOUBLED (400/250 -> 800/500), i.e. one full on+off cycle is
 -- 1300ms instead of 650ms, so the blink is half as frequent.
-vim.opt.guicursor = "n-v-c:block-blinkwait700-blinkon800-blinkoff500,"
-  .. "i-ci:ver25-blinkwait700-blinkon800-blinkoff500,"
-  .. "r-cr:hor20-blinkwait700-blinkon800-blinkoff500"
+-- Disabled: 'guicursor' is set to EMPTY so nvim emits NO DECSCUSR shape/blink
+-- escapes at all.  The outer terminal (Ghostty) therefore fully owns cursor
+-- SHAPE + BLINK (its `cursor-style = underline` + `cursor-style-blink` config).
+--
+-- Kept below for reference (the previous per-mode solid-block/bar/hor setup).
+-- vim.opt.guicursor = "n-v-c:block-blinkwait700-blinkon800-blinkoff500,"
+--   .. "i-ci:ver25-blinkwait700-blinkon800-blinkoff500,"
+--   .. "r-cr:hor20-blinkwait700-blinkon800-blinkoff500"
+vim.opt.guicursor = ""
 
 
 -- (previous cursor experiments, kept for reference)

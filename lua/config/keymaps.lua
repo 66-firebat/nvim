@@ -113,9 +113,13 @@ map("n", "<leader>cd", M.oil_open_terminal, { desc = "[oil]: open terminal in cu
 -- Delete word using CTRL+BKSPC
 map("n", "<C-BS>", "diw", { noremap = true, silent = true })
 
--- Keep cursor centered when scrolling
-map("n", "<C-d>", "<C-d>zz", opts)
-map("n", "<C-u>", "<C-u>zz", opts)
+-- <C-d> / <C-u> left at their NATIVE behaviour (plain half-page scroll).
+-- They were previously mapped to "<C-d>zz" / "<C-u>zz" to keep the cursor
+-- centered, but that breaks HOLDING the key: each key-repeat scrolled and then
+-- `zz` re-centered the viewport, so the view oscillated (scroll up a bit, snap
+-- back, scroll up a bit...) instead of scrolling smoothly.  `zz` is a
+-- do-it-once operation and does not compose with repetition.
+-- (Use `zz` by hand when you want a centred jump.)
 
 -- Move selected line down (J) and up (K)
 map("v", "J", ":m '>+1<CR>gv=gv", opts)

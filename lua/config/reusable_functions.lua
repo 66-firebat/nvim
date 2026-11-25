@@ -233,6 +233,15 @@ function M.oil_toggle()
   if not dir or dir == "" then
     dir = M.current_file_dir()
   end
+  -- The file we came from, if it is a legitimate on-disk file.  Used to place
+  -- the cursor on that entry inside oil.  Skipped for terminals (no filename),
+  -- unnamed/scratch buffers, and files that do not exist on disk yet.
+  local source_file = vim.api.nvim_buf_get_name(source)
+  local want_entry
+  if source_file ~= "" and vim.fn.filereadable(source_file) == 1 then
+    want_entry = vim.fn.fnamemodify(source_file, ":t")
+  end
+
   local ok = pcall(vim.cmd, "Oil " .. vim.fn.fnameescape(dir))
   if not ok then
     pcall(vim.cmd, "Oil")
@@ -240,6 +249,52 @@ function M.oil_toggle()
   local oil_buf = vim.api.nvim_get_current_buf()
   if M.is_oil(oil_buf) then
     vim.api.nvim_buf_set_var(oil_buf, OIL_SOURCE_VAR, source)
+
+    -- Put the cursor ON the originating file inside the oil listing, reusing
+    -- oil's own mechanism (the same one it uses when you navigate into and back
+    -- out of a directory).  `get_entry_on_line` matching happens on the next
+    -- render, so schedule it.
+    if want_entry then
+      -- oil populates the listing ASYNCHRONOUSLY, so a single schedule() can
+      -- run before any entries exist (and `maybe_set_cursor` would silently find
+      -- nothing).  Poll until the entry is present, then position on it.
+      local attempts, max_attempts = 0, 50 -- ~50 * 20ms = 1s
+      local function try_place()
+        attempts = attempts + 1
+        if not (vim.api.nvim_buf_is_valid(oil_buf) and M.is_oil(oil_buf)) then
+          return -- oil closed / replaced; nothing to do
+        end
+        -- Only act once oil has actually rendered entries.
+        local oillib = require("oil")
+        local has_entries = false
+        for lnum = 1, vim.api.nvim_buf_line_count(oil_buf) do
+          local ok_e, e = pcall(oillib.get_entry_on_line, oil_buf, lnum)
+          if ok_e and e and e.name == want_entry then
+            has_entries = true
+            break
+          end
+        end
+
+        if has_entries then
+          local ok_view, view = pcall(require, "oil.view")
+          if ok_view and view.set_last_cursor and view.maybe_set_cursor then
+            view.set_last_cursor(vim.api.nvim_buf_get_name(oil_buf), want_entry)
+            view.maybe_set_cursor()
+          end
+          return
+        end
+
+        if attempts >= max_attempts then
+          vim.notify(
+            ("oil: '%s' not found in %s"):format(want_entry, dir),
+            vim.log.levels.WARN
+          )
+          return
+        end
+        vim.defer_fn(try_place, 20)
+      end
+      vim.defer_fn(try_place, 10)
+    end
   end
 end
 

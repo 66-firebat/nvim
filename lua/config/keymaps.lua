@@ -236,8 +236,8 @@ vim.keymap.set("n", "<C-h>", [[<Cmd>bprevious<CR>]], opts)
 -- Opens a vsplit terminal (current buffer left, terminal right).
 map({ "n", "t" }, "<M-T>", M.terminal_vsplit, { desc = "Terminal in vsplit (right)" })
 
--- Opens a numbered terminal ("<N>  terminal", Emacs M-t).
-map({ "n", "t" }, "<M-t>", M.numbered_terminal, { desc = "Numbered terminal" })
+-- Opens a terminal (Emacs M-t).
+map({ "n", "t" }, "<M-t>", M.spawn_terminal, { desc = "Terminal" })
 
 -- Smart other window (Emacs M-w): split right showing the alternate buffer if
 -- there is only one window, otherwise focus the other window.

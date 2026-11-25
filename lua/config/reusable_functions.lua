@@ -599,26 +599,15 @@ function M.zoxide_query(filter)
   return results
 end
 
---- Zoxide directory travel — dispatch on the ORIGIN buffer.
+--- Zoxide directory travel — always opens Oil at the chosen directory.
 --- Emacs: `my/zoxide-travel-dispatch` (M-z) in keybinds.el.
 ---
----   terminal buffer -> `cd <dir> && clear` in that terminal's shell
----   anything else   -> `:Oil <dir>` (oil replaces itself, see note below)
----
---- The origin buffer is captured BEFORE the picker opens and the action is
---- performed against it afterwards (`nvim_buf_call`), because the picker steals
---- focus.  Mirrors Emacs, which captures `origin-buffer` and re-checks
---- `buffer-live-p` after selection.
+---   anything (including terminal buffers) -> `:Oil <dir>`
 ---
 --- NOTE on oil: `:Oil <dir>` creates a fresh oil buffer, but oil's
 --- `bufhidden = "wipe"` (lua/plugins/oil.lua) means the previous one is wiped
 --- immediately — so repeating M-z from inside oil never accumulates buffers.
 function M.zoxide_travel()
-  local origin = vim.api.nvim_get_current_buf()
-  local origin_is_term = vim.bo[origin].buftype == "terminal"
-  -- Capture the terminal channel now; the buffer may not be current later.
-  local chan = origin_is_term and vim.api.nvim_buf_get_var(origin, "terminal_job_id") or nil
-
   local results = M.zoxide_query("")
   if #results == 0 then
     vim.notify("zoxide: no entries", vim.log.levels.INFO)
@@ -657,53 +646,26 @@ function M.zoxide_travel()
       if not dir or dir == "" then
         return
       end
-      if origin_is_term then
-        -- cd the ORIGIN terminal's shell, then clear (Emacs: "cd %s && clear").
-        if not (chan and vim.api.nvim_buf_is_valid(origin)) then
-          vim.notify("zoxide: origin terminal is gone", vim.log.levels.WARN)
-          return
-        end
-        vim.api.nvim_chan_send(chan, "cd " .. vim.fn.shellescape(dir) .. " && clear\n")
-      else
-        -- Any non-terminal buffer (including oil): `:Oil` navigates/replaces
-        -- in place, so no oil buffer accumulation.
-        vim.cmd("Oil " .. vim.fn.fnameescape(dir))
-      end
+      -- All buffer types behave the same: open Oil at the chosen directory.
+      vim.cmd("Oil " .. vim.fn.fnameescape(dir))
     end,
   })
   return picker
 end
 
 -- =============================================================================
---  §7  Numbered terminal (port of emacs/ghostfire.el `my/ghostel-new-dispatch`
---      indexed naming, without OSC 133 live-relabel)
+--  §7  Terminal spawn (port of emacs/ghostfire.el `my/ghostel-new-dispatch`,
+--      minus the now-defunct numbered-terminal index)
 -- =============================================================================
 
---- Return the lowest unused numbered-terminal index (1, 2, 3, ...).
---- Scans terminal buffers tagged with `b:numbered_terminal_index` (set by
---- `numbered_terminal`).  Emacs: `my/ghostel-next-available`.
-function M.next_terminal_index()
-  local used = {}
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    local ok, idx = pcall(vim.api.nvim_buf_get_var, bufnr, "numbered_terminal_index")
-    if ok and idx then
-      used[idx] = true
-    end
-  end
-  local i = 1
-  while used[i] do
-    i = i + 1
-  end
-  return i
-end
-
---- Spawn a numbered terminal named "<N>  terminal", tagged with a buffer-local
---- `numbered_terminal_index` so index reuse is reliable.
---- Emacs: `M-t` -> `my/ghostel-new-dispatch` (indexed naming only).
-function M.numbered_terminal()
-  local index = M.next_terminal_index()
-  local label = string.format("%d  terminal", index)
-
+--- Spawn a terminal.  (The old fixed `1  terminal` / `2  terminal` index and
+--- `b:numbered_terminal_index` tag were removed: everything is now MRU-ranked
+--- on the fly — the tab bar and <M-i> picker show `MRU.rank` + the foreground
+--- program — so a second, independent terminal numbering provided no value and
+--- leaked a stale `term://N` digit into search.  The cwd resolution and the
+--- `cd … && exec $SHELL` spawn below are still needed and kept.)
+--- Emacs: `M-t` -> `my/ghostel-new-dispatch`.
+function M.spawn_terminal()
   -- Start the shell in the directory of the buffer we spawned from:
   --   * a terminal buffer -> that terminal's LIVE cwd (/proc/<pid>/cwd), so
   --     spawning a terminal from a terminal keeps you where you were;
@@ -733,12 +695,6 @@ function M.numbered_terminal()
   else
     vim.cmd("terminal")
   end
-  local bufnr = vim.api.nvim_get_current_buf()
-  -- Tag with the index (robust; independent of the buffer name).
-  vim.api.nvim_buf_set_var(bufnr, "numbered_terminal_index", index)
-  -- Rename using a `term://<label>` scheme so nvim keeps it as a non-file name
-  -- (a bare relative name would be resolved against cwd into an absolute path).
-  pcall(vim.api.nvim_buf_set_name, bufnr, "term://" .. label)
   vim.cmd("startinsert")
 end
 

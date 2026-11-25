@@ -64,8 +64,8 @@ function M.is_member(bufnr)
   end
 
   -- Terminal buffers are members whenever they have a running job, EVEN while
-  -- their name is still the raw `term://...` form (numbered_terminal renames
-  -- them a moment later).  Without this a freshly spawned terminal reads as a
+  -- their name is still the raw `term://...` form (spawn_terminal names them
+  -- a moment later).  Without this a freshly spawned terminal reads as a
   -- non-member during its TermOpen/BufEnter, so the winbar renders a "?" rank.
   local is_term = vim.bo[bufnr].buftype == "terminal"
 
@@ -642,19 +642,15 @@ function M.pick_buffers()
       local rank = tostring(rank_at[bufnr] or 0)
 
       -- Build the searchable `text` so the MRU rank (the visible index) is
-      -- searchable, but the terminal's `term://N ...` index is NOT.
-      --
-      -- `numbered_terminal()` renames terminal buffers to `term://<N>  terminal`,
-      -- where N is the numbered-terminal INDEX — a DIFFERENT numbering than the
-      -- MRU rank.  Keeping `term://N` in `text` means typing a digit matches BOTH
-      -- the rank AND the stale term:// index, so e.g. the buffer displayed as
-      -- rank 2 can still match query `3` (because its hidden term:// name holds
-      -- a different digit).  Strip the term:// scheme + index so only the rank
-      -- digit (and the display name) drive matching.
+      -- searchable.  For terminals, `name` is already the foreground program
+      -- (bash/pi/...) which IS the user-visible label — search on that, not the
+      -- raw `term://...` buffer name (which may carry paths/IDs unrelated to
+      -- what the user sees).  For files/oil, keep the full path so path search
+      -- still works.  The rank digit stays FIRST so typing a number filters by
+      -- index.
       local searchable_name
       if vim.bo[bufnr].buftype == "terminal" then
-        -- `name` is already the foreground program (bash/pi/...); do NOT
-        -- append the `term://N` filename.
+        -- `name` is already the foreground program (bash/pi/...).
         searchable_name = name
       else
         -- Files/oil keep their path so path search still works.

@@ -198,30 +198,23 @@ end
 -- =============================================================================
 
 local function setup_osc7_dir()
-  -- Decode percent-encoded URI path back to filesystem form.
-  -- Our ~/.bashrc `_osc7_cwd()` percent-encodes everything outside the RFC 3986
-  -- unreserved set, so `%20` -> space, `%2F` -> '/', unicode -> UTF-8 bytes.
-  local function urldecode(s)
-    return (s:gsub("%%(%x%x)", function(hex)
-      return string.char(tonumber(hex, 16))
-    end))
-  end
-
   -- When the shell emits an OSC 7 dir-change sequence (`\e]7;file://<host><path>\e\\`),
   -- nvim fires `TermRequest` with the raw sequence in `ev.data.sequence`.
-  -- Parse it, decode the path, and `:lcd` the focused terminal buffer to it so
-  -- nvim's cwd follows the shell's cwd.
   vim.api.nvim_create_autocmd("TermRequest", {
     group = vim.api.nvim_create_augroup("TerminalOsc7Dir", { clear = true }),
     desc = "Track shell cwd via OSC 7",
     callback = function(ev)
-      -- Strip the `\e]7;file://<host>` prefix; `n` counts matches (>0 == OSC 7).
-      local val, n = string.gsub(ev.data.sequence, "\027]7;file://[^/]*", "")
-      if n == 0 then
+      local seq = ev.data.sequence
+      if not (seq and seq:match("^\027%]7;")) then
         return
       end
 
-      local dir = urldecode(val)
+      -- Strip the `\e]7;file://<host>` prefix, then any trailing ST/BEL.
+      local dir = seq
+        :gsub("^\027%]7;file://[^/]*", "")
+        :gsub("\027\\$", "")
+        :gsub("\a$", "")
+
       if vim.fn.isdirectory(dir) == 0 then
         vim.notify("OSC 7: invalid dir: " .. dir, vim.log.levels.WARN)
         return
@@ -229,7 +222,10 @@ local function setup_osc7_dir()
 
       vim.b[ev.buf].osc7_dir = dir
       if vim.api.nvim_get_current_buf() == ev.buf then
-        vim.cmd.lcd(dir)
+        -- Use :cd (global), not :lcd.  Fugitive and other git tooling resolve
+        -- the repo from getcwd() (global), so a window-local :lcd would leave
+        -- them pointing at the stale launch directory.
+        vim.cmd.cd(vim.fn.fnameescape(dir))
       end
     end,
   })

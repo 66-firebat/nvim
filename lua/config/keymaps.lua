@@ -224,10 +224,9 @@ vim.keymap.set("t", "<C-;>", exit_terminal_mode, { desc = "Exit terminal mode" }
 vim.keymap.set("t", "<Esc>", exit_terminal_mode, { desc = "Exit terminal mode" })
 
 -- Forward ESC to the terminal's job when in a terminal buffer's NORMAL mode
--- (the counterpart to the ESC-in-terminal-mode map above). Installed once per
--- terminal via TermOpen; buffer-local so it only fires in terminal buffers and
--- never touches regular file buffers.
-M.setup_terminal_esc()
+-- (the counterpart to the ESC-in-terminal-mode map above).  Installed once per
+-- terminal via TermOpen by config/terminal_autocmds.lua; buffer-local so it
+-- only fires in terminal buffers and never touches regular file buffers.
 
 -- Navigate buffers without centering the cursor
 vim.keymap.set("n", "<C-l>", [[<Cmd>bnext<CR>]], opts)

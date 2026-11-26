@@ -19,6 +19,7 @@ require("core.lazy")
 require("config.options")
 require("config.keymaps")
 require("config.autocmds")
+require("config.terminal_autocmds").setup()
 -- Global persisted jump ring (C-o/C-i) + its VimEnter/VimLeavePre hooks.
 require("config.jumplist").setup()
 -- Global MRU buffer list (single source of truth for tab + picker numbering).

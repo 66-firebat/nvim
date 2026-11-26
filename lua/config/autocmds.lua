@@ -205,21 +205,7 @@ vim.api.nvim_create_autocmd("FileType", {
 -- Removed: a TermClose autocmd here tried to switch to the alternate buffer
 -- and delete the broot terminal buffer, but it interfered with normal buffer
 -- navigation (the `buffer #` + `bd!` chain could switch away from the user's
--- file).  Broot/terminal lifecycle is now handled explicitly — broot quits via
--- `quit_on_last_cancel`, and the terminal buffer closes when its job exits.
-
--- Auto-close a terminal buffer when its job exits, so you don't see the
--- "[Process exited N]" message.  Uses event.buf (the terminal buffer) so it
--- never touches the user's file buffer.
-vim.api.nvim_create_autocmd("TermClose", {
-  callback = function(event)
-    vim.schedule(function()
-      if event.buf and vim.api.nvim_buf_is_valid(event.buf) then
-        pcall(vim.api.nvim_buf_delete, event.buf, { force = true })
-      end
-    end)
-  end,
-})
+-- file).  Broot/terminal lifecycle is now handled in config/terminal_autocmds.lua.
 
 
 nvim_create_autocmd = api.nvim_create_autocmd
@@ -254,22 +240,14 @@ vim.api.nvim_create_autocmd("BufEnter", {
 
 
 
---[[ -- Automatically enter insert mode in terminal buffers (used primarily for entering broot commands)
-vim.api.nvim_create_autocmd("TermOpen", {
-  pattern = "*",
-  callback = function()
-    vim.cmd("startinsert")
-    vim.bo.filetype = "bash"
-  end,
-}) ]]
-
 -- Removed: a BufLeave autocmd here did `vim.cmd("bd!")` with no buffer
 -- argument, which deleted the CURRENT buffer (the user's file) instead of the
 -- broot terminal whenever focus left it.  We no longer auto-close broot/terminal
 -- buffers on exit — quitting broot explicitly is handled by broot itself.
 
 -- Removed: a TermClose autocmd here did `vim.cmd("bd!")` with no buffer arg
--- (same bug).  Terminal buffers close when their process exits naturally.
+-- (same bug).  Terminal buffers close when their process exits naturally (see
+-- config/terminal_autocmds.lua).
 
 
 -- vim.api.nvim_create_autocmd("BufReadPre", {
@@ -347,36 +325,9 @@ vim.api.nvim_create_autocmd("TermOpen", {
 
 
 
---[[ -- Disables sign column in terminal windows to prevent column colors from showing 
-vim.api.nvim_create_autocmd("TermOpen", {
-  pattern = "*",
-  callback = function()
-    -- Turn off line numbers and relative numbers essentially removing the sign column
-    vim.cmd("let &statuscolumn=''")
-
-  end,
-}) ]]
-
--- Enables all signcolumn features in terminal
-vim.api.nvim_create_autocmd("TermOpen", {
-  group = vim.api.nvim_create_augroup("terminal-style-sync", { clear = true }),
-  callback = function()
-    -- Set filetype to "terminal"/"broot" (not "text") so the tab-line groups
-    -- terminals correctly.  Broot terminals are detected by buffer name.
-    local name = vim.api.nvim_buf_get_name(0)
-    vim.bo.filetype = name:match("broot") and "broot" or "terminal"
-    -- Enable numbers so the statuscol has a "canvas" to draw on
-    vim.opt_local.number = true
-    vim.opt_local.relativenumber = true
-    -- Ensure the signcolumn doesn't collapse
-    vim.opt_local.signcolumn = "yes"
-    -- Force the statuscolumn to be inherited/set
-    -- (Usually inherited globally, but TermOpen sometimes clears it)
-    vim.opt_local.statuscolumn = vim.opt.statuscolumn:get()
-    -- Start in TERMINAL-JOB mode (insert), so the terminal is ready to use.
-    vim.cmd("startinsert")
-  end,
-})
+-- Terminal styling (filetype/signcolumn/statuscolumn sync) and the disabled
+-- sign-column-hiding TermOpen autocmd now live in
+-- config/terminal_autocmds.lua.
 
 
 -- Changes the directory of the path to the current buffer's directory, and also reset the status columns

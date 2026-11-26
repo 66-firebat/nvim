@@ -464,6 +464,14 @@ function M.refresh_terminal_prog(bufnr)
   return true
 end
 
+--- Drop a terminal's cached foreground-program name (called from
+--- config/terminal_autocmds.lua on TermOpen/TermClose so the next refresh
+--- re-resolves it from /proc).
+---@param bufnr integer
+function M.invalidate_terminal_prog(bufnr)
+  prog_cache[bufnr] = nil
+end
+
 -- =============================================================================
 --  §5  Setup
 -- =============================================================================
@@ -494,20 +502,8 @@ function M.setup()
 
   -- A terminal becomes a member only once TermOpen fires (its buftype is still
   -- empty during the BufEnter that creates it), so touch there to make the
-  -- freshly spawned terminal #1 immediately.
-  vim.api.nvim_create_autocmd("TermOpen", {
-    group = group,
-    callback = function(ev)
-      M.touch(ev.buf)
-      prog_cache[ev.buf] = nil
-      -- The previous winbar render may already have happened (before this
-      -- buffer was tracked), leaving a stale "?" rank on screen.  Force the
-      -- winbars to re-evaluate now that the terminal has a rank.
-      vim.schedule(function()
-        pcall(vim.api.nvim__redraw, { winbar = true, flush = true })
-      end)
-    end,
-  })
+  -- freshly spawned terminal #1 immediately.  This now lives in
+  -- config/terminal_autocmds.lua (TerminalMRUTrack augroup).
 
   -- PRUNE: the only removal event we listen to.  Body is a pure table removal
   -- (no nvim API calls), so it is safe to run synchronously while nvim is
@@ -516,65 +512,15 @@ function M.setup()
     group = group,
     callback = function(ev)
       remove(ev.buf)
-      prog_cache[ev.buf] = nil
+      M.invalidate_terminal_prog(ev.buf)
     end,
   })
 
-  -- ── Terminal foreground-program cache ──────────────────────────────────
-  -- Refresh on entry into a terminal, and when we come back to the window.
-  local function maybe_refresh(bufnr)
-    if bufnr and vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buftype == "terminal" then
-      if M.refresh_terminal_prog(bufnr) then
-        vim.cmd("redrawstatus!")
-        vim.cmd("redrawtabline")
-      end
-    end
-  end
-
-  vim.api.nvim_create_autocmd({ "TermEnter", "BufEnter" }, {
-    group = group,
-    callback = function(ev)
-      maybe_refresh(ev.buf)
-    end,
-  })
-
-  vim.api.nvim_create_autocmd("FocusGained", {
-    group = group,
-    callback = function()
-      maybe_refresh(vim.api.nvim_get_current_buf())
-    end,
-  })
-
-  vim.api.nvim_create_autocmd("TermClose", {
-    group = group,
-    callback = function(ev)
-      prog_cache[ev.buf] = nil
-    end,
-  })
-
-  -- ── 5s poll: ONLY the focused window's terminal ────────────────────────
-  -- Per design Q6/Q7: one timer keyed to the focused window; when its tpgid
-  -- changes, force an immediate redraw so every winbar updates.
-  local timer = assert((vim.uv or vim.loop).new_timer())
-  timer:start(
-    M.term_poll_interval,
-    M.term_poll_interval,
-    vim.schedule_wrap(function()
-      local bufnr = vim.api.nvim_get_current_buf()
-      if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then
-        return
-      end
-      -- Only poll while actually sitting in a terminal buffer.
-      if vim.bo[bufnr].buftype ~= "terminal" then
-        return
-      end
-      if M.refresh_terminal_prog(bufnr) then
-        -- Force every winbar (and the statusline/tabline) to re-evaluate now.
-        vim.cmd("redrawstatus!")
-        vim.cmd("redrawtabline")
-      end
-    end)
-  )
+  -- ── Terminal foreground-program cache ────
+  -- Moved to config/terminal_autocmds.lua (TerminalMRURefresh augroup + the
+  -- focused-window poll timer).  That file uses the public helpers
+  -- M.refresh_terminal_prog / M.invalidate_terminal_prog, so `prog_cache` stays
+  -- private to this module.
 
   -- Seed the list with whatever is already open.
   M.refresh()

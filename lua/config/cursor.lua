@@ -206,23 +206,8 @@ function M.setup()
     end,
   })
 
-  -- Terminal buffers: `ModeChanged` does NOT reliably fire when entering a
-  -- terminal (there is no real "normal -> terminal" text transition), and
-  -- `BufEnter` into a terminal reports the ambiguous "nt" mode, so force the
-  -- INSERT style explicitly whenever we enter / spawn a terminal.  Per design,
-  -- terminal mode uses the same cursor as insert mode (grey bar).  Only force
-  -- the insert style while the terminal JOB actually owns the keys (mode
-  -- contains "t"), otherwise the normal style must apply.
-  vim.api.nvim_create_autocmd({ "TermEnter", "TermOpen" }, {
-    group = group,
-    callback = function(ev)
-      if ev.buf and vim.api.nvim_buf_is_valid(ev.buf)
-        and vim.bo[ev.buf].buftype == "terminal"
-        and vim.api.nvim_get_mode().mode:find("t", 1, true) then
-        M.apply("t")
-      end
-    end,
-  })
+  -- Terminal cursor styling now lives in config/terminal_autocmds.lua (the
+  -- "TerminalCursor" augroup calls M.apply("t") on TermEnter/TermOpen there).
 
   -- NOTE: intentionally REMOVED.  This used to `startinsert` whenever a
   -- terminal buffer became current but was in Terminal-Normal mode, forcing

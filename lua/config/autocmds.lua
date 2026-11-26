@@ -104,7 +104,11 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 -- resize neovim split when terminal is resized
-vim.api.nvim_command("autocmd VimResized * wincmd =")
+-- REMOVED: `autocmd VimResized * wincmd =` — auto-equalizing every split on
+-- resize shrank the terminal split while a TUI program (e.g. the pi coding
+-- agent) was mid-stream, so the program wrapped to a stale narrower width.
+-- Nvim already propagates the new size to terminal ptys via SIGWINCH; forcing
+-- `wincmd =` on top of that fought the intended layout.
 
 -- fix terraform and hcl comment string
 vim.api.nvim_create_autocmd("FileType", {

@@ -218,13 +218,6 @@ local function tab_label(bufnr, selected)
   return highlight(hl, body)
 end
 
---- Overflow icon (Emacs my/ct--overflow-str + my/ct--overflow-icons).
---- Maps a count 1..10+ to the Nerd Font glyph (moved to reusable_functions).
-local function overflow_str(n)
-  local icon = R.buffer_count_icon(math.max(n, 1))
-  return " " .. icon
-end
-
 --- Group icon segment (the line-number segment removed).
 --- The leading glyph is the overflow glyph for the NUMBER OF BUFFERS in the
 --- current group, matching Emacs MRU-tabs.el.
@@ -293,7 +286,6 @@ local function render(winid)
   -- Separator between the buffer-count icon and the filetype icon.
   icon_str = icon_str .. highlight("TabCountSep", "")
   -- (filetype icon removed — it now lives in lualine segment A.)
-  local icon_width = vim.fn.strdisplaywidth(icon_str:gsub("%%#.-#", ""):gsub("%%%*", ""))
 
   -- Build tab segments.
   local segments = {}
@@ -311,41 +303,39 @@ local function render(winid)
   -- MRU-tabs.el `nbutlast` logic).  The current buffer is ALREADY leftmost,
   -- so trimming from the right always keeps it visible and renders strictly
   -- left-to-right (never shifts the bar rightward).
-  local avail = win_width - icon_width
-  local hidden = 0
+  --
+  -- Width accounting MUST match the actual rendered string exactly, else the
+  -- winbar overflows and Neovim paints its own `<` truncation marker on the
+  -- left — swallowing the count icon + current tab.
   local function dispwidth(s)
     return vim.fn.strdisplaywidth(s:gsub("%%#.-#", ""):gsub("%%%*", ""))
   end
-  local function total_w(segs)
-    local w = 0
-    for _, s in ipairs(segs) do
-      w = w + dispwidth(s.label) + dispwidth(s.sep)
+
+  -- Build the flat output for a given segment list, then measure its TRUE
+  -- width (icon prefix + per-tab label + separators exactly as rendered).
+  local function build_out(segs)
+    local out = icon_str
+    for i, s in ipairs(segs) do
+      out = out .. s.label
+      if i < #segs then
+        out = out .. s.sep_between  -- two separators between tabs (3 cells)
+      end
     end
-    return w
+    if #segs > 0 then
+      out = out .. segs[#segs].sep  -- trailing separator (2 cells)
+      out = out .. "%#TabEmpty#"
+    end
+    return out
   end
-  while total_w(segments) + dispwidth(overflow_str(hidden + 1)) > avail
-    and #segments > 1 do
+
+  -- Drop rightmost (never-leftmost/current) tabs until the REAL rendered
+  -- string fits the window.  The leftmost tab is the current buffer; keep it
+  -- at all costs so the count icon + current tab stay visible.
+  while #segments > 1 and dispwidth(build_out(segments)) > win_width do
     table.remove(segments) -- remove RIGHTMOST
-    hidden = hidden + 1
   end
 
-  -- Build flat output (left-to-right).
-  local out = icon_str
-  for i, s in ipairs(segments) do
-    out = out .. s.label
-    if i < #segments then
-      out = out .. s.sep_between  -- two separators between tabs
-    end
-  end
-  if #segments > 0 then
-    out = out .. segments[#segments].sep
-    -- Reset highlight so the trailing spaces after the last separ are invisible.
-    out = out .. "%#TabEmpty#"
-  end
-
-  -- (overflow indicator removed — trimmed tabs simply disappear instead.)
-
-  return out
+  return build_out(segments)
 end
 
 -- =============================================================================

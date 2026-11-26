@@ -226,9 +226,47 @@ end
 --  Oil smart dispatch (Emacs `M-e` -> my/broot-default-directory analogue)
 -- =============================================================================
 
--- Buffer-local variable on an oil buffer, recording the buffer oil was spawned
--- from:  b:oil_source = <bufnr>
+-- Global map recording, per window, the buffer oil was spawned from.
+--
+-- Keyed by window id (NOT buffer) because oil's `bufhidden = "wipe"`
+-- destroys the oil buffer whenever you navigate into a subdirectory.  A
+-- window-local var would work too, but a GLOBAL map survives window
+-- close/re-open and lets us seed from Oil's OWN origin tracking
+-- (`vim.w.oil_original_buffer`), which oil.nvim maintains via a BufLeave
+-- autocmd.
+--
+--   g:oil_source = { [winid] = origin_bufnr, ... }
+--
 local OIL_SOURCE_VAR = "oil_source"
+
+--- Read the origin buffer for the CURRENT window from the global map.
+--- Prefers Oil's own `w:oil_original_buffer` when present (it tracks the
+--- buffer you were in before Oil opened), falling back to g:oil_source.
+local function get_oil_source()
+  local winid = vim.api.nvim_get_current_win()
+  -- 1) Oil's native origin (set by oil's BufLeave autocmd, restored by oil.close).
+  local ok, orig = pcall(vim.api.nvim_win_get_var, winid, "oil_original_buffer")
+  if ok and orig and vim.api.nvim_buf_is_valid(orig) then
+    return orig
+  end
+  -- 2) Our own global map (seeded on open, survives oil's buffer wipe).
+  local src_ok, src = pcall(vim.g, OIL_SOURCE_VAR)
+  if src_ok and type(src) == "table" and src[winid] then
+    return src[winid]
+  end
+  return nil
+end
+
+--- Record the origin buffer for the CURRENT window in the global map.
+local function set_oil_source(bufnr)
+  local winid = vim.api.nvim_get_current_win()
+  local src = vim.g[OIL_SOURCE_VAR]
+  if type(src) ~= "table" then
+    src = {}
+    vim.g[OIL_SOURCE_VAR] = src
+  end
+  src[winid] = bufnr
+end
 
 --- Return true if BUFNR is an oil directory buffer.
 function M.is_oil(bufnr)
@@ -242,7 +280,8 @@ end
 --- Toggle Oil at the current file's directory (Emacs `M-e`).
 ---
 --- - If the current buffer is an oil buffer: close it, and return to the
----   buffer oil was spawned from (tracked via `b:oil_source`).
+---   buffer oil was spawned from (tracked via g:oil_source, seeded from
+---   Oil's own w:oil_original_buffer).
 --- - Otherwise: open oil rooted at the focused file's directory, recording the
 ---   current buffer as the origin so the toggle can return to it.
 function M.oil_toggle()
@@ -254,8 +293,8 @@ function M.oil_toggle()
     -- deleting it: deleting the current buffer of a split window collapses
     -- the split (closes the pane).  Restore the originating buffer first,
     -- then wipe the oil buffer (it is no longer displayed).
-    local ok_src, source = pcall(vim.api.nvim_buf_get_var, bufnr, OIL_SOURCE_VAR)
-    if ok_src and source and vim.api.nvim_buf_is_valid(source) and source ~= bufnr then
+    local source = get_oil_source()
+    if source and vim.api.nvim_buf_is_valid(source) and source ~= bufnr then
       pcall(vim.api.nvim_win_set_buf, 0, source)
     else
       -- No valid source (e.g. oil opened directly / no var set): fall back
@@ -293,7 +332,9 @@ function M.oil_toggle()
   end
   local oil_buf = vim.api.nvim_get_current_buf()
   if M.is_oil(oil_buf) then
-    vim.api.nvim_buf_set_var(oil_buf, OIL_SOURCE_VAR, source)
+    -- Store the origin in the global per-window map so it survives oil's
+    -- `bufhidden = "wipe"` when navigating into a subdirectory.
+    set_oil_source(source)
 
     -- Put the cursor ON the originating file inside the oil listing, reusing
     -- oil's own mechanism (the same one it uses when you navigate into and back

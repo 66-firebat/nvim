@@ -26,6 +26,7 @@ return {
       function() require("nabla").popup() end,
       desc = "Nabla popup",
       mode = { "n", "v" },
+      nowait = true,
     },
   },
 }

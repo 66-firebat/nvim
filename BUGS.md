@@ -116,16 +116,36 @@ printf '\033[6 q'; sleep 3; printf '\033[4 q'; sleep 3; printf '\033[0 q'
 
 So the fault is on the Neovim side, not the emulator's.
 
-### Workaround in this config
+### Workaround in this config (current design)
 
-Terminal-mode cursor **shape** is currently accepted as a block. Terminal-mode
-cursor **colour** works, because colour is sent by this config as an OSC 12
-escape (`config/cursor.lua`) and Neovim never emits OSC 12 itself, so there is
-no conflict.
+**Neovim no longer drives the cursor shape at all.** `'guicursor'` is set to the
+empty string in `lua/config/options.lua`:
 
-`t:` is deliberately omitted from `'guicursor'` in `lua/config/options.lua` —
-including it would have Neovim emit a shape that is immediately overridden
-anyway, and omitting it avoids a misleading "this is configured" appearance.
+```lua
+vim.opt.guicursor = ""
+```
+
+With that, Neovim emits **no** DECSCUSR sequences, so there is nothing to be
+overridden and nothing to race. `config/cursor.lua` is then the sole writer of
+both cursor dimensions, via `vim.api.nvim_ui_send()`:
+
+| mode | colour (OSC 12) | shape (DECSCUSR) |
+|---|---|---|
+| normal / visual | `#ff4400` / `#1bfd9c` | `ESC[2 q` steady block |
+| insert / replace / terminal | `#d3d3d3` | `ESC[6 q` steady bar |
+
+Because `t:` is never exercised, this bug is **bypassed rather than fixed** —
+terminal-mode shape works here purely because Neovim is not consulted.
+
+**Historical note:** before the empty `'guicursor'`, this config tried two
+approaches that both lost the race against Neovim's own shape emission —
+omitting `t:` (Neovim fell back to the `n` entry) and re-sending DECSCUSR on a
+timer (needed ~8 writes/second to stay ahead, since Neovim re-emits on every
+redraw). Both were removed.
+
+**Upstream status:** still relevant if Neovim is ever asked to manage shapes
+again. A fix to `cursor_get_mode_idx()` / the libvterm property push would make
+`t:` work natively and remove the need for `cursor.lua`'s DECSCUSR writing.
 
 ### Reproduce the pty capture yourself
 
@@ -138,3 +158,65 @@ sleep 5
 python3 -c "import re;d=open('/tmp/repro.bin','rb').read();\
 print(re.findall(rb'\x1b\[\d q', d))"
 ```
+
+---
+
+## 2. Visible cursor / text flicker under Ghostty (unresolved — suspected Ghostty side)
+
+**Status:** open, **not yet filed upstream**. Suspected to be a Ghostty issue.
+**Affects:** Ghostty 1.4.0 under Hyprland.
+
+### Symptom
+
+The text under the cursor appears to blink/flicker. Observed **outside Neovim**
+too — in a plain shell inside a Ghostty window — which is what points at Ghostty
+rather than Neovim.
+
+### Ruled out
+
+Each of these was tested and did **not** stop the flicker:
+
+| Ruled out | Evidence |
+|---|---|
+| Neovim `guicursor` blink specs | `'guicursor'` is `""`; Neovim emits no shape/blink escapes |
+| Neovim DEC mode 12 (`CSI ? 12 h/l`) | pty capture: mode-12 never sent |
+| Neovim blinking DECSCUSR codes | pty capture: only steady `ESC[2 q` / `ESC[6 q` |
+| `cursor-style-blink = false` | present and loaded (`ghostty +show-config` confirms) |
+| `cursor-opacity = 0.0` | changed to 1.0, still flickers |
+| `cursor-text` colour | changed repeatedly, still flickers |
+| `custom-shader = cursor_blaze.glsl` | commented out, still flickers |
+| Shell integration injecting blink | `GHOSTTY_SHELL_FEATURES=path,title` — no `cursor`; `shell-integration-features = no-cursor` is set |
+| Config not being loaded | `ghostty +show-config` matches the file |
+
+### Relevant Ghostty behaviour (from its source)
+
+`src/terminal/Terminal.zig`, `setCursorStyle()`:
+
+```zig
+self.cursor.is_default = value == .default;
+self.modes.set(.cursor_blinking, switch (value) {
+    .default => self.cursor.default_blink orelse true,
+    ...
+```
+
+Two consequences:
+
+1. Any **explicit** DECSCUSR from a program sets `is_default = false`, after
+   which `cursor-style-blink` is deliberately **ignored** until the program
+   sends `ESC[0 q`. Ghostty's shell integration sends `ESC[5 q` at prompts,
+   which is the mechanism behind ghostty-org/ghostty#2812 / #10643.
+2. `ESC[0 q` resolves blink to `default_blink orelse true` — i.e. **true** when
+   `default_blink` is unset.
+
+Ghostty's blink timer is also a **compile-time constant**, with no config
+option (`src/renderer/Thread.zig`):
+
+```zig
+const CURSOR_BLINK_INTERVAL = 600;   // hardcoded
+```
+
+### Next step
+
+File upstream against ghostty-org/ghostty with the table above, noting that the
+flicker reproduces in a plain shell with shell-integration cursor features
+disabled and no custom shader.

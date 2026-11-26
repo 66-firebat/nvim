@@ -196,26 +196,24 @@ return {
           c = { fg = '#903f16', bg = '#2b2b2b' },
           z = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
         },
+        -- insert / visual / replace use the SAME colours as `normal` below, so
+        -- the statusline does not recolour when you change mode.  (The cursor
+        -- itself already indicates the mode via config/cursor.lua.)
         insert = {
-          a = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#2b2b2b', bg = '#903f16' },
-          c = { fg = '#ff4400', bg = '#2b2b2b' },
-          -- x = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
-          -- y = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
-          -- z = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
+          a = { fg = '#ff4400', bg = '#2b2b2b', gui = 'bold' },
+          b = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
+          c = { fg = '#903f16', bg = '#2b2b2b' },
         },
         visual = {
-          a = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
-          b = { fg = '#2b2b2b', bg = '#903f16' },
-          c = { fg = '#ff4400', bg = '#2b2b2b' },
-        -- x = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
-        -- y = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
-        -- z = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
-      },
+          a = { fg = '#ff4400', bg = '#2b2b2b', gui = 'bold' },
+          b = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
+          c = { fg = '#903f16', bg = '#2b2b2b' },
+        },
+      -- matches `normal` as well (see the note above).
       replace = {
-        a = { fg = '#2c2c2c', bg = '#ff4400', gui = 'bold' },
-        b = { fg = '#2b2b2b', bg = '#903f16' },
-        c = { fg = '#ff4400', bg = 'none' },
+        a = { fg = '#ff4400', bg = '#2b2b2b', gui = 'bold' },
+        b = { fg = '#2b2b2b', bg = '#ff4400', gui = 'bold' },
+        c = { fg = '#903f16', bg = '#2b2b2b' },
       },
       inactive = {
         a = { fg = '#ff4400', bg = '#903f16', gui = 'bold' },

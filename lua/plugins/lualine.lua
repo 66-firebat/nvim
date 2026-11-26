@@ -189,6 +189,16 @@ return {
         symbols = { added = ' ', modified = ' ', removed = ' ' }, -- changes diff symbols
         cond = hide_in_width,
       }
+
+      -- Search count ([4/15]) with its own accent colours.  It lives in
+      -- lualine_c, whose section default is a dim brown (#903f16); giving the
+      -- component explicit colours highlights it without recolouring `diff`,
+      -- which shares the same section.
+      local searchcount = {
+        'searchcount',
+        color = { fg = '#ff4400', bg = '#2b2b2b', gui = 'bold' },
+      }
+
       local my_custom_theme = {
         normal = {
           a = { fg = '#ff4400', bg = '#2b2b2b', gui = 'bold' },
@@ -274,7 +284,7 @@ return {
       sections = {
         lualine_a = {scrollbar_thumb},
         lualine_b = {start_cap, 'location', get_git_branch, diagnostics, end_cap},
-        lualine_c = {'searchcount', diff},
+        lualine_c = {searchcount, diff},
         lualine_x = {function() return require("screenkey").get_keys() end },
         lualine_y = {},
         lualine_z = {},

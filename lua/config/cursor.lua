@@ -224,25 +224,22 @@ function M.setup()
     end,
   })
 
-  -- Force TERMINAL-JOB mode whenever a terminal buffer becomes current
-  -- (e.g. Alt+w shows an already-open terminal via `nvim_win_set_buf`).
-  -- `vim.fn.mode()` returns "n" in Terminal-Normal mode and "t" in
-  -- Terminal-Job mode, so we `startinsert` whenever a terminal buffer is
-  -- current but still in normal mode.  This only runs on BufEnter/WinEnter,
-  -- not on mode changes, so a deliberate <Esc>/<C-;> drop to normal is not
-  -- immediately undone.
-  vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
-    group = group,
-    callback = function()
-      if vim.bo.buftype == "terminal" and vim.fn.mode() ~= "t" then
-        vim.schedule(function()
-          if vim.bo.buftype == "terminal" and vim.fn.mode() ~= "t" then
-            vim.cmd("startinsert")
-          end
-        end)
-      end
-    end,
-  })
+  -- NOTE: intentionally REMOVED.  This used to `startinsert` whenever a
+  -- terminal buffer became current but was in Terminal-Normal mode, forcing
+  -- Terminal-Job mode on every BufEnter/WinEnter.
+  --
+  --  WHY REMOVED — it broke scroll-up in fullscreen TUIs (pi, htop, less, …):
+  --  `startinsert` re-enters Terminal-Job mode, which makes Neovim re-follow the
+  --  terminal's cursor.  A fullscreen TUI (pi in its default `--tui-mode
+  --  fullscreen`) redraws the alt-screen buffer, and each redraw begins with a
+  --  cursor-home escape (`\e[H`).  So the moment you scrolled up to read earlier
+  --  output, a WinEnter/BufEnter (picker preview, MRU re-touch, Alt+w swap, the
+  --  5s mru poll triggering a redraw, etc.) would `startinsert` and snap the
+  --  viewport back to the TUI's home/top row.
+  --
+  --  Entering a terminal still starts in job mode via the TermOpen handler
+  --  (its `vim.cmd("startinsert")`), and a deliberate drop to normal mode
+  --  (<Esc>/<C-;>) is now left alone so you can scroll freely.
 
   -- Leaving nvim: hand the cursor back to the terminal so Ghostty isn't left
   -- showing (e.g.) the grey insert bar after you quit.

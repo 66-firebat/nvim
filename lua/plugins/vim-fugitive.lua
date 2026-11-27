@@ -1,6 +1,6 @@
 return {
   "tpope/vim-fugitive",
-  config = function()
-    vim.keymap.set("n", "<leader>gs", vim.cmd.Git)
-  end
+  -- No <leader>gs binding here: that key is owned by the Snacks git_status
+  -- picker (lua/plugins/snacks.lua).  Fugitive is reached via :Git / q:, or
+  -- via the <leader>gl binding (git log) defined in snacks.lua.
 }

@@ -293,3 +293,10 @@ end, { desc = "Spelling Suggestions with File Preview" })
 
 -- Close all other buffers
 vim.keymap.set("n", "<leader>bo", M.close_other_buffers, { desc = "Close all other buffers" })
+
+-- Git status picker (Snacks): one entry per `git status --porcelain` line,
+-- with per-file +N -M change counts.  Enter = state-aware fugitive diff,
+-- Ctrl+Enter = edit file.  See lua/plugins/snacks.lua (picker.sources.git_status).
+vim.keymap.set("n", "<leader>gs", function()
+  Snacks.picker.git_status()
+end, { desc = "Git Status" })

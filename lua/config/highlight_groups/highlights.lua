@@ -47,7 +47,7 @@ vim.api.nvim_set_hl(0, "NonText", { fg = "#ff4400" })
 vim.api.nvim_set_hl(0, 'WhichKeyDesc', { fg = '#ff4400', bg = 'none', blend = 0 })
 
 -- -- If you use listchars to show indentation guides, set this too
--- vim.api.nvim_set_hl(0, "Whitespace", { fg = "#3a3a3a" })
+vim.api.nvim_set_hl(0, "Whitespace", { fg = "#3a3a3a" })
 
 -- vim.api.nvim_set_hl(0, 'SnacksPickerBoxBorder', { fg = '#ff4400', bg = 'none' })
 -- -- vim.api.nvim_set_hl(0, 'MiniStatusLineModeNormal', { fg = '#ff5500', bg 6' })
@@ -64,7 +64,7 @@ vim.api.nvim_set_hl(0, 'WhichKeyDesc', { fg = '#ff4400', bg = 'none', blend = 0 
 -- vim.api.nvim_set_hl(0, 'MasonHighlightBlock', { fg = '#ff5500', bg = '#903f16' })
 -- vim.api.nvim_set_hl(0, 'MasonHighlightBlockBold', { fg = '#ff5500', bg = '#903f16' })
 -- vim.api.nvim_set_hl(0, 'MasonHeaderSecondary', { fg = '#ff5500', bg = '#903f16' })
--- vim.api.nvim_set_hl(0, 'IblIndent', { fg = '#903f16' })
+vim.api.nvim_set_hl(0, 'IblIndent', { fg = '#d3d3d3' })
 -- vim.api.nvim_set_hl(0, 'Comment', { fg = '#903f16', bg = 'none' })
 -- vim.api.nvim_set_hl(0, 'CursorColumn', { fg = 'none', bg = 'none' })
 -- -- vim.api.nvim_set_hl(0, 'Cursor', { fg = '#ff5500', bg = '#903f16' })

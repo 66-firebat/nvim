@@ -94,6 +94,18 @@ return {
             end
           end,
         },
+        git_log = {
+          confirm = function(picker, item)
+            picker:close()
+            local hash = item and item.commit
+            if not hash then
+              return
+            end
+            vim.schedule(function()
+              vim.cmd("Gtabedit " .. hash)
+            end)
+          end,
+        },
       },
     },
     quickfile = { enabled = true },
@@ -213,8 +225,10 @@ return {
     },
     {
       "<leader>gl",
-      "<cmd>Git log --oneline<CR>",
-      desc = "Git Log (fugitive)",
+      function()
+        Snacks.picker.git_log()
+      end,
+      desc = "Git Log",
     },
     {
       "<leader>gL",

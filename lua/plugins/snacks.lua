@@ -82,6 +82,18 @@ return {
       enabled = true,
       sources = {
         files = { hidden = false },
+        command_history = {
+          confirm = function(picker, item)
+            -- Prefer the selected item; fall back to whatever the user typed
+            -- so a brand-new command (with no history match) still runs.
+            local cmd = item and (item.cmd or item.text) or picker.input.filter.pattern
+            picker:close()
+            if cmd and cmd ~= "" then
+              vim.fn.histadd("cmd", cmd)
+              vim.cmd(cmd)
+            end
+          end,
+        },
       },
     },
     quickfile = { enabled = true },
@@ -114,6 +126,15 @@ return {
     },
   },
   keys = {
+    -- Bare `:` opens the command-history picker (insert mode, input focused).
+    {
+      ":",
+      function()
+        Snacks.picker.command_history()
+      end,
+      mode = { "n", "x" },
+      desc = "Command History",
+    },
     -- Top Pickers & Explorer
     {
       "<leader><space>",

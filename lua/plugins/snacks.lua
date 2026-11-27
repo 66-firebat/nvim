@@ -95,6 +95,21 @@ return {
           end,
         },
         git_log = {
+          -- Custom preview: show a compact `git diff --stat`-style summary
+          -- instead of the full patch (which is too tall/wide for the small
+          -- preview window and gets clipped).  Output:
+          --     <hash> <subject>
+          --     <file> | <N> ++--
+          --     ...
+          --     N files changed, X insertions(+), Y deletions(-)
+          preview = function(ctx)
+            local commit = ctx.item and ctx.item.commit
+            if not commit then
+              return
+            end
+            local cmd = { "git", "--no-pager", "show", "--stat", "--oneline", commit }
+            return Snacks.picker.preview.cmd(cmd, ctx, { ft = "git" })
+          end,
           confirm = function(picker, item)
             picker:close()
             local hash = item and item.commit

@@ -296,7 +296,11 @@ vim.keymap.set("n", "<leader>bo", M.close_other_buffers, { desc = "Close all oth
 
 -- Render the equation under the cursor to a PNG and open it in a scrollable
 -- image buffer (works for any equation size; doubled density 768).
-vim.keymap.set("n", "<leader>Ji", M.math_image_buffer, { desc = "Math -> scrollable image buffer" })
+vim.keymap.set("n", "<leader>Ji", M.math_image_buffer, { desc = "Math -> satty (fullscreen)" })
+-- Render the equation and view it via mcat in a new tab (full window).
+vim.keymap.set("n", "<leader>Jm", M.math_image_tab, { desc = "Math -> image (new tab)" })
+-- Render the equation and view it via mcat in a horizontal split.
+vim.keymap.set("n", "<leader>Jh", M.math_image_hsplit, { desc = "Math -> image (hsplit)" })
 
 -- Git status picker (Snacks): one entry per `git status --porcelain` line.
 -- Enter = state-aware fugitive diff, Shift+Enter = edit file.  See

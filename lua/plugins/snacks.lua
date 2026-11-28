@@ -58,9 +58,16 @@ return {
     },
     image = {
       enabled = true,
-      -- Render $...$/$$...$$ LaTeX math in markdown/latex documents as images
-      -- (via pdflatex + ImageMagick, both already on PATH).  Color comes from
-      -- the SnacksImageMath highlight group.
+      -- Render LaTeX math as images (pdflatex + ImageMagick).  FLOATING mode:
+      -- the rendered math opens in a floating window (on hover/cursor) instead
+      -- of inline placeholders, so nothing overlaps/collides with the text.
+      doc = {
+        enabled = true,
+        inline = false,
+        float = true,
+        max_width = 80,
+        max_height = 40,
+      },
       math = {
         enabled = true,
         latex = {

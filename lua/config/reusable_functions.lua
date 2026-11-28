@@ -927,40 +927,60 @@ end
 --- Render the LaTeX equation under the cursor to a PNG (pdflatex + magick) and
 --- open it in a normal, scrollable image buffer via snacks' BufReadCmd handler.
 function M.math_image_buffer()
-  local parser = require("txm.parser")
-  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-  local text = table.concat(lines, "\n")
-
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local row, col = cursor[1] - 1, cursor[2]
-  local offset = 0
-  for i = 1, row do
-    offset = offset + #lines[i] + 1
-  end
-  offset = offset + col
-
-  local chosen
-  local scan = 1
-  for _, r in ipairs(parser.find_latex(text)) do
-    local start = text:find(r.content, scan, true)
-    if start then
-      local finish = start + #r.content
-      if offset >= start and offset <= finish then
-        chosen = r
-        break
-      end
-      scan = finish + 1
+  -- Find the math node under the cursor via tree-sitter (same nodes the hover
+  -- float uses: inline_formula, displayed_equation, math_environment, formula),
+  -- so ALL math forms are detected, not just `$...$`.
+  local math_node_types = {
+    inline_formula = true,
+    displayed_equation = true,
+    math_environment = true,
+    formula = true,
+  }
+  local function math_text_at_cursor()
+    local ok, parser = pcall(vim.treesitter.get_parser, vim.api.nvim_get_current_buf())
+    if not ok or not parser then
+      return nil
     end
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local row0 = cursor[1] - 1
+    local col = cursor[2]
+    local found
+    parser:for_each_tree(function(tstree)
+      if found or not tstree then
+        return
+      end
+      local root = tstree:root()
+      local node = root:named_descendant_for_range(row0, col, row0, col + 1)
+      local cur = node
+      while cur do
+        if math_node_types[cur:type()] then
+          found = cur
+          break
+        end
+        cur = cur:parent()
+      end
+      if not found and math_node_types[root:type()] then
+        found = root
+      end
+    end)
+    if found then
+      return vim.treesitter.get_node_text(found, vim.api.nvim_get_current_buf())
+    end
+    return nil
   end
 
-  if not chosen or vim.trim(chosen.content) == "" then
+  local content = math_text_at_cursor()
+  if not content or vim.trim(content) == "" then
     vim.notify("Not on an equation", vim.log.levels.INFO)
     return
   end
 
-  local content = vim.trim(chosen.content)
+  content = vim.trim(content)
   content = content:gsub("^%$+", ""):gsub("%$+$", "")
-  content = content:gsub("^\\[%[%(]", ""):gsub("\\[%]%)]$", "")
+  content = content:gsub("^\\%[", ""):gsub("\\%]$", "")
+  content = content:gsub("^\\%( ", ""):gsub(" \\%)$", "")
+  content = content:gsub("^\\begin%{.-%}", "")
+  content = content:gsub("\\end%{.-%}$", "")
 
   local tmp = vim.fn.tempname()
   local dir = vim.fn.fnamemodify(tmp, ":h")
@@ -972,7 +992,7 @@ function M.math_image_buffer()
 
   local fg = "FF4400"
   local tex_src = table.concat({
-    "\\documentclass[preview,border=4pt,varwidth,12pt]{standalone}",
+    "\\documentclass[preview,border=0pt,varwidth,12pt]{standalone}",
     "\\usepackage{amsmath,amssymb,amsfonts,amscd,mathtools,xcolor}",
     "\\begin{document}",
     "{\\Large\\color[HTML]{" .. fg .. "}",
@@ -989,10 +1009,10 @@ function M.math_image_buffer()
   f:write(tex_src)
   f:close()
 
-  -- Compile LaTeX -> PDF (in the temp dir), then rasterize PDF -> PNG with a
-  -- DOUBLED density (768) for a sharp, scrollable image.
+  -- Compile LaTeX -> PDF, then rasterize PDF -> PNG with DOUBLED density (768)
+  -- and a TRANSPARENT background (alpha preserved).
   local cmd = string.format(
-    "cd %s && pdflatex -interaction=nonstopmode -halt-on-error -output-directory=%s %s >/dev/null 2>&1 && magick -density 768 %s -trim %s >/dev/null 2>&1",
+    "cd %s && pdflatex -interaction=nonstopmode -halt-on-error -output-directory=%s %s >/dev/null 2>&1 && magick -density 768 -background none %s -trim +repage %s >/dev/null 2>&1",
     vim.fn.shellescape(dir),
     vim.fn.shellescape(dir),
     vim.fn.shellescape(base),
@@ -1005,9 +1025,17 @@ function M.math_image_buffer()
     return
   end
 
-  -- Open the PNG in a scrollable image buffer (snacks' BufReadCmd turns it into
-  -- a scrollable `filetype=image` buffer).
-  vim.cmd("edit " .. vim.fn.fnameescape(png))
+  -- Open the PNG in satty (scroll/zoom/annotate), FULLSCREEN.  If satty is
+  -- missing, fall back to xdg-open.  NOTE: `--filename` takes the path as its
+  -- VALUE, so the order must be `satty --filename <png> --fullscreen`.
+  local png_q = vim.fn.shellescape(png)
+  local launch
+  if vim.fn.executable("satty") == 1 then
+    launch = "satty --filename " .. png_q .. " --fullscreen"
+  else
+    launch = "xdg-open " .. png_q
+  end
+  vim.fn.system({ "sh", "-c", launch .. " >/dev/null 2>&1 &" })
 end
 
 return M

@@ -182,9 +182,10 @@ local function tab_label(bufnr, selected)
   local name
 
   if buftype == "terminal" then
-    -- Terminals show the foreground program of the shell (tpgid), resolved and
-    -- cached by config/mru.lua.  Falls back to a literal label if unknown.
-    name = MRU.terminal_prog(bufnr) or "terminal"
+    -- Terminals show "<prog>:<cwd-basename>" (e.g. "bash:nvim") — the
+    -- foreground program + the last cwd component, so multiple terminals are
+    -- distinguishable at a glance (kept in sync with the <M-i> picker).
+    name = MRU.terminal_name(bufnr)
   elseif vim.bo[bufnr].filetype == "oil" then
     -- Oil buffer names look like `oil:///path/to/dir/`.  Show only the
     -- directory's basename (e.g. `/home/u/proj` -> `proj`); fall back to the

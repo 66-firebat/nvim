@@ -516,6 +516,43 @@ function M.refresh_terminal_prog(bufnr)
   return true
 end
 
+--- Return the live cwd of a terminal buffer via /proc/<pid>/cwd (Linux).
+--- Mirrors reusable_functions.terminal_cwd, kept here so mru owns terminal
+--- naming without a cross-module dependency cycle.
+---@param bufnr integer
+---@return string|nil
+function M.terminal_cwd(bufnr)
+  if vim.bo[bufnr].buftype ~= "terminal" then
+    return nil
+  end
+  local pid = vim.api.nvim_buf_get_var(bufnr, "terminal_job_pid")
+  if not pid then
+    return nil
+  end
+  local ok, cwd = pcall(vim.uv.fs_readlink, "/proc/" .. pid .. "/cwd")
+  if ok and cwd then
+    return cwd
+  end
+  return nil
+end
+
+--- Display name for a terminal buffer: "<prog>:<cwd-basename>"
+--- (e.g. "bash:nvim").  Falls back to just the program when the cwd can't be
+--- resolved.  Used by BOTH the tabline (tabs.lua) and the <M-i> buffer picker.
+---@param bufnr integer
+---@return string
+function M.terminal_name(bufnr)
+  local prog = M.terminal_prog(bufnr) or "terminal"
+  local cwd = M.terminal_cwd(bufnr)
+  if cwd and cwd ~= "" then
+    local base = vim.fn.fnamemodify(cwd, ":t")
+    if base ~= "" and base ~= "/" then
+      return prog .. ":" .. base
+    end
+  end
+  return prog
+end
+
 --- Drop a terminal's cached foreground-program name (called from
 --- config/terminal_autocmds.lua on TermOpen/TermClose so the next refresh
 --- re-resolves it from /proc).
@@ -588,7 +625,7 @@ end
 ---@return string
 local function buffer_display_name(bufnr)
   if vim.bo[bufnr].buftype == "terminal" then
-    return M.terminal_prog(bufnr) or "terminal"
+    return M.terminal_name(bufnr)
   end
   if vim.bo[bufnr].filetype == "oil" then
     local raw = vim.api.nvim_buf_get_name(bufnr)

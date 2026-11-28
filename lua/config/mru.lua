@@ -303,6 +303,58 @@ function M.rank(bufnr)
 end
 
 -- =============================================================================
+--  §3b  Rank label (two-letter aliasing, vai.nvim home-row order)
+-- =============================================================================
+
+-- Keys ordered by typing ease (vai.nvim `default_labels`): home row first,
+-- then top row, then bottom row.  This makes `aa`/`ss`/`dd`/... land on
+-- home-row keys, which are the fastest to double-tap.
+local RANK_KEYS = {
+  "a", "s", "d", "f", "g", "j", "k", "l", -- home row (8)
+  "w", "e", "r", "t", "y", "u", "i", "o", -- top row (8)
+  "c", "v", "n",                             -- bottom row (3)
+}
+
+-- Pre-built combo list in vai's "ease of typing" order: doubles first
+-- (`aa`, `ss`, ...), then the fan-out (`as`, `ad`, ...).  Matches
+-- vai.nvim's `build_combo_list(default_labels)` exactly.
+local RANK_LABELS = {}
+do
+  for _, l in ipairs(RANK_KEYS) do
+    RANK_LABELS[#RANK_LABELS + 1] = l .. l
+  end
+  for _, c1 in ipairs(RANK_KEYS) do
+    for _, c2 in ipairs(RANK_KEYS) do
+      if c1 ~= c2 then
+        RANK_LABELS[#RANK_LABELS + 1] = c1 .. c2
+      end
+    end
+  end
+end
+
+local RANK_LABEL_COUNT = #RANK_LABELS -- 361 (19 doubles + 342 fan-outs)
+
+--- Map a 1-based MRU rank to a stable two-letter label.
+--- 1 -> "aa", 2 -> "ss", ... (vai home-row order).  Beyond the 361 two-letter
+--- combos (extremely rare), falls back to `<label><cycle>` so it stays short
+--- and never collides (e.g. "aa2" for the 2nd overflow cycle).
+---@param rank integer|nil
+---@return string
+function M.rank_label(rank)
+  rank = rank or 0
+  if type(rank) ~= "number" or rank < 1 then
+    return "?"
+  end
+  if rank <= RANK_LABEL_COUNT then
+    return RANK_LABELS[rank]
+  end
+  -- Overflow: cycle the labels and suffix a number.
+  local cycle = math.floor((rank - 1) / RANK_LABEL_COUNT)
+  local rem = ((rank - 1) % RANK_LABEL_COUNT) + 1
+  return RANK_LABELS[rem] .. tostring(cycle)
+end
+
+-- =============================================================================
 --  §4  Terminal foreground-program resolution
 -- =============================================================================
 
@@ -585,7 +637,8 @@ function M.pick_buffers()
     for _, bufnr in ipairs(live) do
       local filename = vim.api.nvim_buf_get_name(bufnr)
       local name = buffer_display_name(bufnr)
-      local rank = tostring(rank_at[bufnr] or 0)
+      local rank = rank_at[bufnr] or 0
+      local label = M.rank_label(rank)
 
       -- Build the searchable `text` so the MRU rank (the visible index) is
       -- searchable.  For terminals, `name` is already the foreground program
@@ -613,7 +666,7 @@ function M.pick_buffers()
         buftype = vim.bo[bufnr].buftype,
         filetype = vim.bo[bufnr].filetype,
         -- rank digit stays FIRST so typing a number filters by index.
-        text = rank .. " " .. searchable_name,
+        text = label .. " " .. searchable_name,
       }
     end
     return out
@@ -660,8 +713,9 @@ function M.pick_buffers()
     -- open (they re-sync on the next open).
     format = function(item, picker_)
       local SnacksFmt = require("snacks.picker.format")
+      local label = M.rank_label(item.rank or 0)
       local ret = {
-        { ("%3d"):format(item.rank or 0), "SnacksPickerBufNr" },
+        { ("%3s"):format(label), "SnacksPickerBufNr" },
         { " " },
       }
       vim.list_extend(ret, SnacksFmt.filename(item, picker_))

@@ -201,8 +201,9 @@ local function tab_label(bufnr, selected)
   end
 
   local num = get_stable_number(bufnr)
-  -- Layout:  <index> <sep> <name> <sep> <filetype icon>
-  -- e.g.     1 <sep> bash <sep>   
+  local label = MRU.rank_label(num)
+  -- Layout:  <label> <sep> <name> <sep> <filetype icon>
+  -- e.g.     aa <sep> bash <sep>   
   -- The filetype icon sits at the END, after the name, separated by its own
   -- separator.  (It used to live in lualine segment A; that slot now shows the
   -- scrollbar-thumb slice icon instead.)
@@ -213,7 +214,7 @@ local function tab_label(bufnr, selected)
   else
     tail = ""
   end
-  local body = " " .. num .. "  " .. prefix .. name .. tail
+  local body = " " .. label .. "  " .. prefix .. name .. tail
   local hl = selected and "TabSelected" or "TabUnselected"
   return highlight(hl, body)
 end

@@ -75,7 +75,20 @@ return {
           packages = { "amsmath", "amssymb", "amsfonts", "amscd", "mathtools" },
         },
       },
+      -- Higher resolution: the math image is a PDF (pdflatex output), and the
+      -- magick PDF->PNG step uses `convert.magick.pdf` (default density 192).
+      -- Raise it for a sharper image.  (NOTE: `convert.magick.math` is NOT used
+      -- for math — dispatch falls through to `pdf` because the temp PNG name
+      -- has no "math" token.)
+      convert = {
+        magick = {
+          pdf = { "-density", 384, "{src}[{page}]", "-background", "white", "-alpha", "remove", "-trim" },
+        },
+      },
     },
+    -- (the style override `styles.snacks_image` lives in the shared `styles`
+    -- table further down, next to `styles.notification` — Lua would otherwise
+    -- let a duplicate `styles` key silently replace this one.)
     picker = {
       -- Use plain Neovim diff syntax highlighting instead of snacks' "fancy"
       -- diff (which draws the ┌───┐ border boxes around hunks).  `syntax` shows
@@ -241,6 +254,14 @@ return {
     styles = {
       notification = {
         -- wo = { wrap = true } -- Wrap notifications
+      },
+      -- Pin the floating math hover window to the bottom-right corner of the
+      -- editor (overrides the `snacks_image` style's `relative="cursor",
+      -- row=1, col=1`).
+      snacks_image = {
+        relative = "editor",
+        row = -1,  -- bottom
+        col = -1,  -- right
       },
     },
   },

@@ -577,7 +577,11 @@ function M.search_line_jump()
   vim.schedule(function()
     Snacks.picker.lines({
       on_close = function(picker)
-        local q = picker.input and picker.input.filter and picker.input.filter.search
+        local f = picker.input and picker.input.filter
+        -- The `lines` picker is NOT live, so the typed fuzzy query lives in
+        -- `filter.pattern` (live pickers use `filter.search`).  Reading `search`
+        -- here was nil, so the `/` register was never seeded.
+        local q = f and (f.pattern or f.search)
         seed_search(q)
       end,
     })

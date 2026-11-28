@@ -936,7 +936,7 @@ function M.math_image_buffer()
     math_environment = true,
     formula = true,
   }
-  local function math_text_at_cursor()
+  local function math_at_cursor()
     local ok, parser = pcall(vim.treesitter.get_parser, vim.api.nvim_get_current_buf())
     if not ok or not parser then
       return nil
@@ -964,23 +964,30 @@ function M.math_image_buffer()
       end
     end)
     if found then
-      return vim.treesitter.get_node_text(found, vim.api.nvim_get_current_buf())
+      return vim.treesitter.get_node_text(found, vim.api.nvim_get_current_buf()), found:type()
     end
     return nil
   end
 
-  local content = math_text_at_cursor()
+  local content, node_type = math_at_cursor()
   if not content or vim.trim(content) == "" then
     vim.notify("Not on an equation", vim.log.levels.INFO)
     return
   end
 
   content = vim.trim(content)
-  content = content:gsub("^%$+", ""):gsub("%$+$", "")
-  content = content:gsub("^\\%[", ""):gsub("\\%]$", "")
-  content = content:gsub("^\\%( ", ""):gsub(" \\%)$", "")
-  content = content:gsub("^\\begin%{.-%}", "")
-  content = content:gsub("\\end%{.-%}$", "")
+
+  -- Environments (align/equation/matrix/pmatrix/...): keep the raw
+  -- \begin{...}...\end{...} body as-is (so `&`/`\` alignment chars stay valid)
+  -- and do NOT wrap in \[..\].
+  local is_environment = node_type == "math_environment"
+
+  if not is_environment then
+    -- Formula: strip the $/$$/\(/\[/\] delimiters and wrap in display math.
+    content = content:gsub("^%$+%s*", ""):gsub("%s*%$+$", "")
+    content = content:gsub("^\\%[", ""):gsub("\\%]$", "")
+    content = content:gsub("^\\%( ", ""):gsub(" \\%)$", "")
+  end
 
   local tmp = vim.fn.tempname()
   local dir = vim.fn.fnamemodify(tmp, ":h")
@@ -991,12 +998,13 @@ function M.math_image_buffer()
   vim.fn.mkdir(dir, "p")
 
   local fg = "FF4400"
+  local body = is_environment and content or ("\\[" .. content .. "\\]")
   local tex_src = table.concat({
     "\\documentclass[preview,border=0pt,varwidth,12pt]{standalone}",
     "\\usepackage{amsmath,amssymb,amsfonts,amscd,mathtools,xcolor}",
     "\\begin{document}",
     "{\\Large\\color[HTML]{" .. fg .. "}",
-    "\\[" .. content .. "\\]",
+    body,
     "}",
     "\\end{document}",
   }, "\n")

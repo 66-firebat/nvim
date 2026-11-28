@@ -446,14 +446,20 @@ api.nvim_create_autocmd("OptionSet", {
 -- re-anchor its top-left to the current cursor on every cursor move (Normal
 -- mode only), and close it in any other mode (Insert/Visual).
 -- Make the snacks image math hover float track the cursor per-character
--- (Normal mode only): re-anchor its top-left one cell below/right of the
--- cursor on every cursor move.  Closing on Insert/Visual mode is handled by
--- the hover() patch in lua/plugins/snacks.lua.
-api.nvim_create_autocmd("CursorMoved", {
-  callback = function()
+-- (Normal mode only), positioning dynamically so it stays on screen:
+--   * cursor in the TOP half of the window  -> float below-right (NW anchor)
+--   * cursor in the BOTTOM half (inclusive) -> float above-right (SW anchor)
+-- Closing on Insert/Visual mode is handled by the hover() patch in
+-- lua/plugins/snacks.lua.
+do
+  local function reanchor()
     if vim.fn.mode() ~= "n" then
       return
     end
+    local winline = vim.fn.winline() -- 1-based cursor line within the window
+    local win_h = api.nvim_win_get_height(api.nvim_get_current_win())
+    local lower_half = winline > math.floor(win_h / 2)
+
     for _, win in ipairs(api.nvim_list_wins()) do
       local buf = api.nvim_win_get_buf(win)
       if
@@ -464,15 +470,42 @@ api.nvim_create_autocmd("CursorMoved", {
         local cfg = api.nvim_win_get_config(win)
         if cfg.relative and cfg.relative ~= "" then
           cfg.relative = "cursor"
-          cfg.row = 1
           cfg.col = 1
+          if lower_half then
+            -- Bottom half: float above-right.  The border adds a cell OUTSIDE
+            -- the content corner, so `row = 0` places the visible border 1 cell
+            -- above the cursor (row = -1 would be 2 above = too high).
+            cfg.anchor = "SW"
+            cfg.row = 0
+          else
+            -- Top half: float below-right.
+            cfg.anchor = "NW"
+            cfg.row = 1
+          end
           api.nvim_win_set_config(win, cfg)
         end
         break
       end
     end
-  end,
-})
+  end
+
+  -- Smooth per-character tracking on every cursor move.
+  api.nvim_create_autocmd("CursorMoved", {
+    callback = reanchor,
+  })
+
+  -- Catch the float's creation: snacks creates it ASYNCHRONOUSLY
+  -- (schedule_wrap(M.hover)), so a synchronous CursorMoved re-anchor runs
+  -- BEFORE the window exists and leaves it at the default position until the
+  -- next move (the "sometimes appears to the right" bug).  `WinNew` fires when
+  -- snacks creates the float; defer one tick so the cursor is back in the
+  -- source window, then re-anchor.
+  api.nvim_create_autocmd("WinNew", {
+    callback = function()
+      vim.schedule(reanchor)
+    end,
+  })
+end
 
 -- React to mode changes immediately (without waiting for a cursor move):
 --   * Entering Visual/Insert -> close the hover float right away.

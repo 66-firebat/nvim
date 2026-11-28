@@ -49,6 +49,9 @@ vim.api.nvim_set_hl(0, 'IblScope', { fg = '#ff4400', bg = 'none' })
 vim.api.nvim_set_hl(0, "NonText", { fg = "#ff4400" })
 -- Set which-key block hint popup
 vim.api.nvim_set_hl(0, 'WhichKeyDesc', { fg = '#ff4400', bg = 'none', blend = 0 })
+-- Toggle (<leader>u) icon color: snacks passes color name "glow" -> which-key
+-- builds `WhichKeyIconGlow` (hex isn't supported as a color name).
+vim.api.nvim_set_hl(0, 'WhichKeyIconGlow', { fg = '#1bfd9c' })
 
 -- -- If you use listchars to show indentation guides, set this too
 vim.api.nvim_set_hl(0, "Whitespace", { fg = "#3a3a3a" })

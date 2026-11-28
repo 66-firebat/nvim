@@ -52,6 +52,20 @@ return {
     },
     indent = { enabled = false },
     input = { enabled = true },
+    -- Toggle (<leader>u) glyphs: ON =  (U+F192), OFF =  (U+F1DB), both
+    -- colored #1bfd9c via the `glow` name -> WhichKeyIconGlow highlight group
+    -- (defined in config/highlight_groups/highlights.lua).  which-key icon
+    -- `color` is a NAME (it builds `WhichKeyIcon<Name>`), not a hex value.
+    toggle = {
+      icon = {
+        enabled = vim.fn.nr2char(0xF192) .. " ",
+        disabled = vim.fn.nr2char(0xF1DB) .. " ",
+      },
+      color = {
+        enabled = "glow",
+        disabled = "glow",
+      },
+    },
     notifier = {
       enabled = true,
       timeout = 3000,

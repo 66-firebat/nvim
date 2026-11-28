@@ -834,9 +834,8 @@ end
 -- =============================================================================
 
 --- Render the LaTeX equation under the cursor using the external `txm` CLI's
---- BOXED output, shown in a floating window.  Replaces the nabla popup for
---- <leader>J: txm's box frames the equation more nicely than nabla's plain
---- ASCII.
+--- BOXED output, shown in a floating window.  (Currently UNBOUND — kept as a
+--- utility; `<leader>J` is now satty, see §11.)
 ---
 --- Implementation: reuse txm.nvim's own parser to locate the `$...$` math zone
 --- containing the cursor, shell out to `txm` (default = boxed), strip the ANSI
@@ -920,15 +919,12 @@ end
 
 -- =============================================================================
 --  §11  math image rendering — render the equation under the cursor to a PNG
---       (pdflatex + magick, doubled density 768, transparent).  Shared by:
---         <leader>Ji -> satty (fullscreen GUI)
---         <leader>Jm -> mcat in a new tab (full window, interactive terminal)
---         <leader>Jh -> mcat in a horizontal split (interactive terminal)
+--       (pdflatex + magick, doubled density 768, transparent) and open it in
+--       satty (fullscreen, scroll/zoom/annotate).  Bound to <leader>J.
 -- =============================================================================
 
 --- Render the LaTeX equation under the cursor to a PNG (pdflatex + magick), then
---- return the PNG path (or nil).  Shared by <leader>Ji (satty), <leader>Jm (mcat
---- full window), and <leader>Jh (mcat horizontal split).
+--- return the PNG path (or nil).
 function M.render_equation_png()
   -- Find the math node under the cursor via tree-sitter (same nodes the hover
   -- float uses: inline_formula, displayed_equation, math_environment, formula),
@@ -1052,32 +1048,6 @@ function M.math_image_buffer()
     launch = "xdg-open " .. png_q
   end
   vim.fn.system({ "sh", "-c", launch .. " >/dev/null 2>&1 &" })
-end
-
---- Open the equation in a NEW TAB using Neovim's NATIVE image viewer
---- (snacks image, filetype=image).  This uses Neovim's own kitty-graphics
---- emission — the SAME mechanism as the working hover float.
----
---- NOTE: we do NOT use `mcat` here.  `mcat` emits kitty-graphics escape
---- sequences, but Neovim's `:terminal` emulator cannot display them (terminal
---- graphics support is an open upstream issue; `vim.ui.img` is absent in
---- nvim 0.12.6).  Running mcat in a `:terminal` shows only a flicker.
-function M.math_image_tab()
-  local png = M.render_equation_png()
-  if not png then
-    return
-  end
-  vim.cmd("tabnew " .. vim.fn.fnameescape(png))
-end
-
---- Open the equation in a HORIZONTAL SPLIT using Neovim's native image viewer
---- (snacks image, filetype=image).  See the mcat note above.
-function M.math_image_hsplit()
-  local png = M.render_equation_png()
-  if not png then
-    return
-  end
-  vim.cmd("split " .. vim.fn.fnameescape(png))
 end
 
 return M

@@ -425,3 +425,19 @@ end ]]
 -- vim.api.nvim_create_autocmd({ "VimLeavePre", "DirChanged" }, {
 --   callback = save_cwd_to_file,
 -- })
+
+-- Disable folding and enable line wrapping in diff buffers (e.g. fugitive
+-- :Gvdiffsplit).  Neovim auto-sets `foldmethod=diff` + `foldenable` when `diff`
+-- mode activates, collapsing unchanged context between hunks.  Keep the full
+-- files visible (no folds) and wrapped instead.
+api.nvim_create_autocmd("OptionSet", {
+  pattern = "diff",
+  callback = function()
+    if vim.wo.diff then
+      vim.wo.foldmethod = "manual"
+      vim.wo.foldenable = false
+      vim.wo.wrap = true
+      vim.wo.linebreak = true
+    end
+  end,
+})

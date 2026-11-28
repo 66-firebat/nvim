@@ -122,121 +122,65 @@ return {
           end,
         },
         git_status = {
-          -- Append per-file change counts (+N -M) from `git diff --numstat`
-          -- (working tree) and `--cached` (index), looked up lazily and
-          -- memoized so we only shell out to git once per repo.
-          format = function(item, picker)
-            local fmt = Snacks.picker.format.git_status(item, picker)
-            if not item.file then
-              return fmt
-            end
-            local cwd = item.cwd or picker.opts.cwd or vim.fn.getcwd()
-            local cache = picker._git_status_counts
-              or {}
-            picker._git_status_counts = cache
-            local key = cwd .. "\0" .. (item.file or "")
-            if cache[key] == nil then
-              cache[key] = {}
-            end
-            local counts = cache[key]
-            if counts.loaded == nil then
-              counts.loaded = true
-              -- Build path -> (added, deleted) for worktree and index.
-              local function numstat(args)
-                local out = vim.fn.systemlist({ "git", "--no-pager", "diff", "--numstat", unpack(args) })
-                local m = {}
-                for _, line in ipairs(out) do
-                  local a, d, p = line:match("^(%d+)\t(%d+)\t(.+)$")
-                  if p then
-                    m[p] = { added = tonumber(a), deleted = tonumber(d) }
-                  end
-                end
-                return m
-              end
-              -- Working tree (unstaged) vs index.
-              local wt = numstat({})
-              -- Index (staged) vs HEAD.
-              local ix = numstat({ "--cached" })
-              -- Determine the path as git reports it (handle renames: use the
-              -- new path from item.rename when present).
-              local path = item.rename or item.file
-              local w = wt[path] or wt[item.file]
-              local i = ix[path] or ix[item.file]
-              counts.added = (w and w.added or 0) + (i and i.added or 0)
-              counts.deleted = (w and w.deleted or 0) + (i and i.deleted or 0)
-            end
-            -- Append " +N -M" (only if there is any count).
-            if counts.added and counts.added > 0 or counts.deleted and counts.deleted > 0 then
-              local s = " "
-              s = s .. ("+%d"):format(counts.added or 0) .. " " .. ("-%d"):format(counts.deleted or 0)
-              fmt[#fmt + 1] = { s, "SnacksPickerGitStat" }
-            end
-            return fmt
-          end,
+          -- Enter opens a vertical fugitive vimdiff, choosing the right two
+          -- versions based on the porcelain XY status code.
           confirm = function(picker, item)
-            local status = item and item.status
             local file = item and (item.rename or item.file)
+            local status = item and item.status
+            local cwd = item and item.cwd
             if not file then
               return
             end
-            -- Capture the main (target) window BEFORE closing, so the
-            -- vimdiff opens there and not in the just-closed picker or a
-            -- terminal window.
-            local main_win = picker.main
             picker:close()
-            -- State-aware fugitive VERTICAL vimdiff based on the porcelain XY
-            -- code.  X = index (staged), Y = working tree (unstaged).
-            -- Fugitive resolves a bare path as "the file as it exists in the
-            -- work tree"; a commit/index object prefixes it (e.g. HEAD:path,
-            -- :0:path = index version).  :Gvdiffsplit always splits vertical.
-            local x = (status:sub(1, 1) or " ")
-            local y = (status:sub(2, 2) or " ")
-            local unstaged = y ~= " " and y ~= "?"
-            local staged = x ~= " " and x ~= "?"
-            local esc = vim.fn.fnameescape(file)
-            local cmd
-            if unstaged and staged then
-              -- Both staged and unstaged: diff HEAD vs work tree (full net change).
-              cmd = "Gvdiffsplit! " .. esc
-            elseif staged then
-              -- Staged only: diff index vs HEAD (what will be committed).
-              cmd = "Gvdiffsplit HEAD:" .. vim.fn.fnameescape(file)
-            elseif unstaged then
-              -- Unstaged only: diff work tree vs index.
-              cmd = "Gvdiffsplit " .. esc
-            else
-              -- Untracked (?)/ignored (!): nothing to diff against, so edit.
-              vim.schedule(function()
-                vim.cmd("edit " .. esc)
-              end)
-              return
-            end
             vim.schedule(function()
-              -- Run the split in the captured main window, not the current
-              -- (possibly terminal/picker) window.
-              if main_win and vim.api.nvim_win_is_valid(main_win) then
-                vim.api.nvim_set_current_win(main_win)
+              -- Absolute path so :edit works regardless of getcwd().
+              local abs = file
+              if cwd and not vim.startswith(file, "/") then
+                abs = vim.fn.fnamemodify(cwd, ":p") .. file
               end
-              vim.cmd(cmd)
+              local x = (status:sub(1, 1) or " ")
+              local y = (status:sub(2, 2) or " ")
+              local staged = x ~= " " and x ~= "?"
+              local unstaged = y ~= " " and y ~= "?"
+              if unstaged and staged then
+                -- Both staged and unstaged: net change since HEAD.
+                vim.cmd("edit " .. vim.fn.fnameescape(abs))
+                vim.cmd("Gvdiffsplit HEAD:" .. vim.fn.fnameescape(file))
+              elseif staged then
+                -- Staged only: HEAD vs index (what's staged to commit).
+                vim.cmd("edit " .. vim.fn.fnameescape(abs))
+                vim.cmd("Gvdiffsplit HEAD:" .. vim.fn.fnameescape(file))
+              elseif unstaged then
+                -- Unstaged only: index vs work tree.
+                vim.cmd("edit " .. vim.fn.fnameescape(abs))
+                vim.cmd("Gvdiffsplit")
+              else
+                -- Untracked (?)/ignored (!): nothing to diff, just edit.
+                vim.cmd("edit " .. vim.fn.fnameescape(abs))
+              end
             end)
           end,
           win = {
             input = {
               keys = {
-                -- Ctrl+Enter edits the file (Enter is the state-aware diff).
-                ["<C-CR>"] = { "git_edit_file", mode = { "n", "i" } },
+                ["<S-CR>"] = { "git_edit_file", mode = { "n", "i" } },
               },
             },
           },
           actions = {
             git_edit_file = function(picker, item)
               local file = item and (item.rename or item.file)
+              local cwd = item and item.cwd
               if not file then
                 return
               end
               picker:close()
               vim.schedule(function()
-                vim.cmd("edit " .. vim.fn.fnameescape(file))
+                local abs = file
+                if cwd and not vim.startswith(file, "/") then
+                  abs = vim.fn.fnamemodify(cwd, ":p") .. file
+                end
+                vim.cmd("edit " .. vim.fn.fnameescape(abs))
               end)
             end,
           },

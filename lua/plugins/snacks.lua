@@ -57,6 +57,14 @@ return {
       timeout = 3000,
     },
     picker = {
+      -- Use plain Neovim diff syntax highlighting instead of snacks' "fancy"
+      -- diff (which draws the ┌───┐ border boxes around hunks).  `syntax` shows
+      -- just the diff content with built-in +/- highlighting, no decoration.
+      previewers = {
+        diff = {
+          style = "syntax",
+        },
+      },
       layout = {
 
         preview = "main",

@@ -294,6 +294,10 @@ end, { desc = "Spelling Suggestions with File Preview" })
 -- Close all other buffers
 vim.keymap.set("n", "<leader>bo", M.close_other_buffers, { desc = "Close all other buffers" })
 
+-- Render the equation under the cursor to a PNG and open it in a scrollable
+-- image buffer (works for any equation size; doubled density 768).
+vim.keymap.set("n", "<leader>Ji", M.math_image_buffer, { desc = "Math -> scrollable image buffer" })
+
 -- Git status picker (Snacks): one entry per `git status --porcelain` line.
 -- Enter = state-aware fugitive diff, Shift+Enter = edit file.  See
 -- lua/plugins/snacks.lua (picker.sources.git_status).

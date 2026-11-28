@@ -918,4 +918,96 @@ function M.txm_hover()
   vim.keymap.set("n", "q", "<Cmd>close<CR>", { buffer = buf })
 end
 
+-- =============================================================================
+--  §11  math image buffer — render the equation under the cursor to a PNG and
+--       open it in a SCROLLABLE image buffer (instead of a non-scrollable
+--       hover float).  Works for ALL equation sizes; doubled density (768).
+-- =============================================================================
+
+--- Render the LaTeX equation under the cursor to a PNG (pdflatex + magick) and
+--- open it in a normal, scrollable image buffer via snacks' BufReadCmd handler.
+function M.math_image_buffer()
+  local parser = require("txm.parser")
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local text = table.concat(lines, "\n")
+
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row, col = cursor[1] - 1, cursor[2]
+  local offset = 0
+  for i = 1, row do
+    offset = offset + #lines[i] + 1
+  end
+  offset = offset + col
+
+  local chosen
+  local scan = 1
+  for _, r in ipairs(parser.find_latex(text)) do
+    local start = text:find(r.content, scan, true)
+    if start then
+      local finish = start + #r.content
+      if offset >= start and offset <= finish then
+        chosen = r
+        break
+      end
+      scan = finish + 1
+    end
+  end
+
+  if not chosen or vim.trim(chosen.content) == "" then
+    vim.notify("Not on an equation", vim.log.levels.INFO)
+    return
+  end
+
+  local content = vim.trim(chosen.content)
+  content = content:gsub("^%$+", ""):gsub("%$+$", "")
+  content = content:gsub("^\\[%[%(]", ""):gsub("\\[%]%)]$", "")
+
+  local tmp = vim.fn.tempname()
+  local dir = vim.fn.fnamemodify(tmp, ":h")
+  local base = vim.fn.fnamemodify(tmp, ":t:r")
+  local tex = dir .. "/" .. base .. ".tex"
+  local pdf_file = dir .. "/" .. base .. ".pdf"
+  local png = dir .. "/" .. base .. ".png"
+  vim.fn.mkdir(dir, "p")
+
+  local fg = "FF4400"
+  local tex_src = table.concat({
+    "\\documentclass[preview,border=4pt,varwidth,12pt]{standalone}",
+    "\\usepackage{amsmath,amssymb,amsfonts,amscd,mathtools,xcolor}",
+    "\\begin{document}",
+    "{\\Large\\color[HTML]{" .. fg .. "}",
+    "\\[" .. content .. "\\]",
+    "}",
+    "\\end{document}",
+  }, "\n")
+
+  local f = io.open(tex, "w")
+  if not f then
+    vim.notify("failed to write temp tex", vim.log.levels.ERROR)
+    return
+  end
+  f:write(tex_src)
+  f:close()
+
+  -- Compile LaTeX -> PDF (in the temp dir), then rasterize PDF -> PNG with a
+  -- DOUBLED density (768) for a sharp, scrollable image.
+  local cmd = string.format(
+    "cd %s && pdflatex -interaction=nonstopmode -halt-on-error -output-directory=%s %s >/dev/null 2>&1 && magick -density 768 %s -trim %s >/dev/null 2>&1",
+    vim.fn.shellescape(dir),
+    vim.fn.shellescape(dir),
+    vim.fn.shellescape(base),
+    vim.fn.shellescape(pdf_file),
+    vim.fn.shellescape(png)
+  )
+  vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 then
+    vim.notify("math render failed", vim.log.levels.ERROR)
+    return
+  end
+
+  -- Open the PNG in a scrollable image buffer (snacks' BufReadCmd turns it into
+  -- a scrollable `filetype=image` buffer).
+  vim.cmd("edit " .. vim.fn.fnameescape(png))
+end
+
 return M

@@ -294,9 +294,21 @@ end, { desc = "Spelling Suggestions with File Preview" })
 -- Close all other buffers
 vim.keymap.set("n", "<leader>bo", M.close_other_buffers, { desc = "Close all other buffers" })
 
--- Git status picker (Snacks): one entry per `git status --porcelain` line,
--- with per-file +N -M change counts.  Enter = state-aware fugitive diff,
--- Ctrl+Enter = edit file.  See lua/plugins/snacks.lua (picker.sources.git_status).
+-- Git status picker (Snacks): one entry per `git status --porcelain` line.
+-- Enter = state-aware fugitive diff, Shift+Enter = edit file.  See
+-- lua/plugins/snacks.lua (picker.sources.git_status).
+-- If the repo is clean, show the normal `git status` output; if not a git
+-- repo, notify instead of opening an empty picker.
 vim.keymap.set("n", "<leader>gs", function()
+  local rev = vim.fn.system({ "git", "rev-parse", "--is-inside-work-tree" })
+  if vim.v.shell_error ~= 0 then
+    vim.notify("not a git repo", vim.log.levels.WARN)
+    return
+  end
+  local out = vim.fn.systemlist({ "git", "status", "--porcelain" })
+  if #out == 0 then
+    vim.cmd("Git status")
+    return
+  end
   Snacks.picker.git_status()
 end, { desc = "Git Status" })

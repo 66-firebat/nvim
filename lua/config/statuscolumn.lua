@@ -314,9 +314,29 @@ function M.slice_icon()
   return slice_icons[band]
 end
 
+--- Return whether any flash.nvim state is currently active (visible).
+--- flash.nvim does not expose a public "active" flag or event, but every live
+--- jump keeps its State in `flash.state._states` with `visible == true` while
+--- labels are pending.  This is a render-time read so it self-corrects on every
+--- redraw and covers ALL flash modes (jump/char/treesitter/remote/...).
+function M.flash_active()
+  local ok, st = pcall(require, "flash.state")
+  if not ok or not st or not st._states then
+    return false
+  end
+  for state in pairs(st._states) do
+    if state.visible then
+      return true
+    end
+  end
+  return false
+end
+
 --- Return the single-letter indicator for the current Vim mode as a SQUARED
 --- Nerd Font (MDI alpha-X-box) glyph.
 --- n=normal, i=insert, v=visual, o=operator-pending, c=command, t=terminal, etc.
+--- While flash.nvim is active this is replaced by the search glyph (cf.
+--- `M.flash_active` in `gutter_segment`).
 function M.mode_letter()
   local mode = vim.fn.mode() -- e.g. "n", "i", "v", "V", "\22", "o", "c", "t", "R", "s"
   -- Map each mode to its alpha-X-box glyph (U+F0B08 is alpha-a-box, +1 per letter).
@@ -418,9 +438,11 @@ function M.gutter_segment(args)
     --   [space][gitsign][space][mode letter][space][│/mark]
     local sep = mark and M.mark_icon(mark) or "│"
     local sephl = mark and "%#StatusColumnMark#" or "%#StatusColumnSearchCap#"
+    -- While flash is pending, swap the mode letter for the search glyph.
+    local icon = M.flash_active() and "󰩉" or M.mode_letter()
     return "%#StatusColumnSearchLead# " .. gitsign
       .. "%#StatusColumnSearchLead# "
-      .. "%#StatusColumnSlice#" .. M.mode_letter()
+      .. "%#StatusColumnSlice#" .. icon
       .. "%#StatusColumnCap# "
       .. sephl .. sep
   end

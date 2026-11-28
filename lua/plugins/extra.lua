@@ -105,14 +105,24 @@ return {
     event = "VeryLazy",
     ---@type Flash.Config
     opts = {
+      highlight = {
+        backdrop = false, -- don't dim non-matching text during flash
+      },
       modes = {
         search = {enabled = true},
         char = {
           enabled = false, -- enable Flash for f/F/t/T
           jump_labels = true, -- show labels on matches
+          highlight = { backdrop = false }, -- don't dim during operator-pending flash (df/yf/cf)
         },
       },
     },
+    config = function(_, opts)
+      require("flash").setup(opts)
+      vim.api.nvim_set_hl(0, "FlashLabel",   { fg = "#1bfd9c", bg = "#2b2b2b" })
+      vim.api.nvim_set_hl(0, "FlashMatch",   { fg = "#ff4400", bg = "#2b2b2b" })
+      vim.api.nvim_set_hl(0, "FlashCurrent", { fg = "#ff4400", bg = "#2b2b2b" })
+    end,
     -- stylua: ignore
     keys = {
       { "/",     mode = { "n", "x", "o" },"/",              desc = "Flash" },

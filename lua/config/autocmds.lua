@@ -461,8 +461,8 @@ api.nvim_create_autocmd("CursorMoved", {
         local cfg = api.nvim_win_get_config(win)
         if cfg.relative and cfg.relative ~= "" then
           cfg.relative = "cursor"
-          cfg.row = 0
-          cfg.col = 0
+          cfg.row = 1
+          cfg.col = 1
           api.nvim_win_set_config(win, cfg)
           break
         end

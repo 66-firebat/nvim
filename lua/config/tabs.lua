@@ -177,7 +177,7 @@ end
 ---   * file     -> the file's basename
 local function tab_label(bufnr, selected)
   local modified = vim.bo[bufnr].modified
-  local prefix = modified and "󱨧 " or ""
+  local prefix = modified and "󰑧 " or ""
   local buftype = vim.bo[bufnr].buftype
   local name
 

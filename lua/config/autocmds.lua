@@ -443,16 +443,19 @@ api.nvim_create_autocmd("OptionSet", {
 })
 
 -- Make the snacks image math hover float track the cursor per-character:
--- re-anchor its top-left to the current cursor on every cursor move.  This
--- overrides snacks' hover float, which otherwise only opens on equation change
--- and does NOT re-position while scrubbing within the same equation.
+-- re-anchor its top-left to the current cursor on every cursor move (Normal
+-- mode only), and close it in any other mode (Insert/Visual).
+-- Make the snacks image math hover float track the cursor per-character
+-- (Normal mode only): re-anchor its top-left one cell below/right of the
+-- cursor on every cursor move.  Closing on Insert/Visual mode is handled by
+-- the hover() patch in lua/plugins/snacks.lua.
 api.nvim_create_autocmd("CursorMoved", {
   callback = function()
+    if vim.fn.mode() ~= "n" then
+      return
+    end
     for _, win in ipairs(api.nvim_list_wins()) do
       local buf = api.nvim_win_get_buf(win)
-      -- Identify the hover float: a snacks-managed window (vim.w[win].snacks_win)
-      -- whose buffer is the snacks scratch (ft = "snacks_win", not "image").
-      -- Re-anchor its top-left to the cursor each time the cursor moves.
       if
         vim.w[win].snacks_win ~= nil
         and vim.api.nvim_buf_is_valid(buf)
@@ -464,8 +467,47 @@ api.nvim_create_autocmd("CursorMoved", {
           cfg.row = 1
           cfg.col = 1
           api.nvim_win_set_config(win, cfg)
-          break
         end
+        break
+      end
+    end
+  end,
+})
+
+-- React to mode changes immediately (without waiting for a cursor move):
+--   * Entering Visual/Insert -> close the hover float right away.
+--   * Entering Normal        -> re-open/refresh the hover float at the cursor.
+api.nvim_create_autocmd("ModeChanged", {
+  callback = function(ev)
+    local mode = vim.fn.mode() -- current mode after the change
+    local ok, doc = pcall(require, "snacks.image.doc")
+
+    if mode ~= "n" then
+      -- Entered a non-normal mode: close immediately (using snacks' own
+      -- hover_close so its internal hover state is reset, not just the window).
+      if ok and doc and doc.hover_close then
+        pcall(doc.hover_close)
+      else
+        -- fallback: close raw snacks_win float windows
+        for _, win in ipairs(api.nvim_list_wins()) do
+          local buf = api.nvim_win_get_buf(win)
+          if
+            vim.w[win].snacks_win ~= nil
+            and vim.api.nvim_buf_is_valid(buf)
+            and vim.bo[buf].filetype == "snacks_win"
+          then
+            pcall(api.nvim_win_close, win, true)
+            return
+          end
+        end
+      end
+    else
+      -- Back to Normal: refresh so the float reappears immediately at the
+      -- cursor without requiring a cursor move.
+      if ok and doc and doc.hover then
+        vim.schedule(function()
+          pcall(doc.hover)
+        end)
       end
     end
   end,

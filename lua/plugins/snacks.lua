@@ -265,6 +265,27 @@ return {
       },
     },
   },
+  -- Patch snacks' hover so the math float never (re)opens in a non-Normal
+  -- mode.  snacks' own CursorMoved autocmd re-opens the float while scrubbing,
+  -- and its `mode() ~= "n"` guard misses transient normal-state during visual
+  -- scrub.  Patched here (eagerly) so it's in place before any buffer attaches.
+  config = function(_, opts)
+    require("snacks").setup(opts)
+    local ok, doc = pcall(require, "snacks.image.doc")
+    if ok and doc and not doc._user_hover_guard then
+      doc._user_hover_guard = true
+      local orig = doc.hover
+      doc.hover = function(...)
+        if vim.fn.mode(true) ~= "n" then
+          if doc.hover_close then
+            pcall(doc.hover_close)
+          end
+          return
+        end
+        return orig(...)
+      end
+    end
+  end,
   keys = {
     -- Bare `:` opens the command-history picker (insert mode, input focused).
     {

@@ -829,4 +829,93 @@ end
 
 -- M.setup_terminal_esc() was moved to config/terminal_autocmds.lua.
 
+-- =============================================================================
+--  §10  txm hover — boxed ASCII render of the equation under the cursor
+-- =============================================================================
+
+--- Render the LaTeX equation under the cursor using the external `txm` CLI's
+--- BOXED output, shown in a floating window.  Replaces the nabla popup for
+--- <leader>J: txm's box frames the equation more nicely than nabla's plain
+--- ASCII.
+---
+--- Implementation: reuse txm.nvim's own parser to locate the `$...$` math zone
+--- containing the cursor, shell out to `txm` (default = boxed), strip the ANSI
+--- escapes txm emits unconditionally, and open the result in a floating
+--- scratch buffer.
+function M.txm_hover()
+  local parser = require("txm.parser")
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  local text = table.concat(lines, "\n")
+
+  -- Cursor position (0-based row for parser offsets).
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row, col = cursor[1] - 1, cursor[2]
+
+  -- Byte offset of the cursor within `text`.
+  local offset = 0
+  for i = 1, row do
+    offset = offset + #lines[i] + 1 -- +1 for the newline
+  end
+  offset = offset + col
+
+  -- txm.parser.find_latex returns { content, e } per region; it does NOT return
+  -- the region's start offset.  Reconstruct each region's start by scanning
+  -- forward for its content, then check whether the cursor falls inside it.
+  local chosen
+  local scan = 1
+  for _, r in ipairs(parser.find_latex(text)) do
+    local start = text:find(r.content, scan, true)
+    if start then
+      local finish = start + #r.content
+      if offset >= start and offset <= finish then
+        chosen = r
+        break
+      end
+      scan = finish + 1
+    end
+  end
+
+  if not chosen or vim.trim(chosen.content) == "" then
+    vim.notify("Not on an equation", vim.log.levels.INFO)
+    return
+  end
+
+  -- Run txm (boxed by default) and strip ANSI.
+  local out = vim.fn.systemlist({ "txm", chosen.content })
+  local function strip(s)
+    return (s:gsub("\27%[[%d;]*m", ""))
+  end
+  for i, l in ipairs(out) do
+    out[i] = strip(l)
+  end
+
+  -- Show in a floating window (same layout as txm.nvim's preview).
+  local pad = "    "
+  local display = {}
+  for _, l in ipairs(out) do
+    display[#display + 1] = pad .. l
+  end
+  table.insert(display, 1, "")
+  display[#display + 1] = ""
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, display)
+  local width = math.min(vim.fn.max(vim.tbl_map(vim.fn.strdisplaywidth, display)), math.floor(vim.o.columns * 0.8))
+  local height = math.min(#display, math.floor(vim.o.lines * 0.8))
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = width + 4,
+    height = height,
+    row = (vim.o.lines - height) / 2,
+    col = (vim.o.columns - width) / 2,
+    border = "single",
+    title = " txm ",
+    title_pos = "center",
+    style = "minimal",
+  })
+  vim.bo[buf].modifiable = false
+  vim.wo[win].winhighlight = "NormalFloat:Normal,FloatBorder:Normal,FloatTitle:Normal"
+  vim.keymap.set("n", "q", "<Cmd>close<CR>", { buffer = buf })
+end
+
 return M

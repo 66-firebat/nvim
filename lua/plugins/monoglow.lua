@@ -9,13 +9,12 @@ return {
     end,
 
     -- Color the RAW LaTeX math (as revealed by math-conceal when scrubbing the
-    -- cursor) with the monoglow glow green, so equations stand out from the
+    -- cursor) with the monoglow glow (#ff4400), so equations stand out from the
     -- gray body text.  monoglow-z's syntax colors are all gray; these re-map
-    -- the math tokens to #1bfd9c (the original monoglow glow) so the source is
-    -- visibly highlighted while editing.  NOTE: this is independent of the
-    -- global `colors.glow = "#ff4400"` override above.
+    -- the math tokens to the glow color so the source is visibly highlighted
+    -- while editing.
     on_highlights = function(highlights, colors)
-      local glow = "#1bfd9c"
+      local glow = "#ff4400"
       local math_tokens = {
         "@function",           -- \alpha, \int, \frac (LaTeX commands)
         "@function.builtin",   -- built-in math functions

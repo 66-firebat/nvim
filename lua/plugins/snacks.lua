@@ -56,6 +56,19 @@ return {
       enabled = true,
       timeout = 3000,
     },
+    image = {
+      enabled = true,
+      -- Render $...$/$$...$$ LaTeX math in markdown/latex documents as images
+      -- (via pdflatex + ImageMagick, both already on PATH).  Color comes from
+      -- the SnacksImageMath highlight group.
+      math = {
+        enabled = true,
+        latex = {
+          font_size = "Large",
+          packages = { "amsmath", "amssymb", "amsfonts", "amscd", "mathtools" },
+        },
+      },
+    },
     picker = {
       -- Use plain Neovim diff syntax highlighting instead of snacks' "fancy"
       -- diff (which draws the ┌───┐ border boxes around hunks).  `syntax` shows

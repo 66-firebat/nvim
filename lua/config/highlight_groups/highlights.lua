@@ -23,6 +23,8 @@ vim.api.nvim_set_hl(0, 'SnacksPickerTitle', { fg = '#ff4400', bg = 'none' })
 vim.api.nvim_set_hl(0, 'SnacksPickerDirectory', { fg = '#ff4400', bg = 'none' })
 -- Per-file change counts (+/-) appended to the git_status picker rows
 vim.api.nvim_set_hl(0, 'SnacksPickerGitStat', { fg = '#ff4400', bg = 'none' })
+-- Color for snacks image's rendered LaTeX math (the ${color} in the latex tpl)
+vim.api.nvim_set_hl(0, 'SnacksImageMath', { fg = '#ff4400', bg = 'none' })
 -- Changes the color of the column status mark (statuscolumn-vai)
 vim.api.nvim_set_hl(0, 'StatusMark', { fg = '#ff4400', bg = '#2b2b2b', blend = 0 })
 vim.api.nvim_set_hl(0, 'NoColor', { fg = '#2b2b2b', bg = '#2b2b2b', blend = 0 })

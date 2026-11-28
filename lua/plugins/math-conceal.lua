@@ -58,30 +58,29 @@ return {
       -- (gray #cccccc in monoglow-z); setting `color` overrides that with a
       -- typst color expression so the base image text is #1bfd9c.
       styling_type = "colorscheme",
-      color = 'rgb("#1bfd9c")',
-      -- Vary colors in the rendered image by typst math element, using shades
-      -- of the glow green, so operators/fractions/delimiters/attachments are
-      -- visually distinct (not all the same flat green).  These `#show` rules
-      -- are injected via each renderer's `header`.
+      color = 'rgb("#ff4400")',
+      -- Color the rendered image uniformly with #ff4400 (all typst math
+      -- elements use the SAME color).  These `#show` rules are redundant with
+      -- `color` but are kept explicit so every element is definitely #ff4400.
       renderers = {
         typst = {
           filetypes = { "typst" },
           header = [=[
-#show math.attach: set text(fill: rgb("#0c9661"))
-#show math.frac: set text(fill: rgb("#12b878"))
-#show math.op: set text(fill: rgb("#17d68a"))
-#show math.accent: set text(fill: rgb("#7cf8d2"))
-#show math.lr: set text(fill: rgb("#54f0be"))
+#show math.attach: set text(fill: rgb("#ff4400"))
+#show math.frac: set text(fill: rgb("#ff4400"))
+#show math.op: set text(fill: rgb("#ff4400"))
+#show math.accent: set text(fill: rgb("#ff4400"))
+#show math.lr: set text(fill: rgb("#ff4400"))
 ]=],
         },
         markdown = {
           filetypes = { "markdown" },
           header = [=[
-#show math.attach: set text(fill: rgb("#0c9661"))
-#show math.frac: set text(fill: rgb("#12b878"))
-#show math.op: set text(fill: rgb("#17d68a"))
-#show math.accent: set text(fill: rgb("#7cf8d2"))
-#show math.lr: set text(fill: rgb("#54f0be"))
+#show math.attach: set text(fill: rgb("#ff4400"))
+#show math.frac: set text(fill: rgb("#ff4400"))
+#show math.op: set text(fill: rgb("#ff4400"))
+#show math.accent: set text(fill: rgb("#ff4400"))
+#show math.lr: set text(fill: rgb("#ff4400"))
 ]=],
         },
       },

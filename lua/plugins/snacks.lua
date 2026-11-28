@@ -255,13 +255,14 @@ return {
       notification = {
         -- wo = { wrap = true } -- Wrap notifications
       },
-      -- Pin the floating math hover window to the bottom-right corner of the
-      -- editor (overrides the `snacks_image` style's `relative="cursor",
-      -- row=1, col=1`).
+      -- Pin the floating math hover window to the CURSOR (top-left corner
+      -- aligned to the cursor), so it moves along as you scrub the equation.
+      -- `relative="cursor"` + `row=0` + `col=0` puts the top-left of the float
+      -- at the cursor cell.
       snacks_image = {
-        relative = "editor",
-        row = -1,  -- bottom
-        col = -1,  -- right
+        relative = "cursor",
+        row = 0,
+        col = 0,
       },
     },
   },

@@ -441,3 +441,32 @@ api.nvim_create_autocmd("OptionSet", {
     end
   end,
 })
+
+-- Make the snacks image math hover float track the cursor per-character:
+-- re-anchor its top-left to the current cursor on every cursor move.  This
+-- overrides snacks' hover float, which otherwise only opens on equation change
+-- and does NOT re-position while scrubbing within the same equation.
+api.nvim_create_autocmd("CursorMoved", {
+  callback = function()
+    for _, win in ipairs(api.nvim_list_wins()) do
+      local buf = api.nvim_win_get_buf(win)
+      -- Identify the hover float: a snacks-managed window (vim.w[win].snacks_win)
+      -- whose buffer is the snacks scratch (ft = "snacks_win", not "image").
+      -- Re-anchor its top-left to the cursor each time the cursor moves.
+      if
+        vim.w[win].snacks_win ~= nil
+        and vim.api.nvim_buf_is_valid(buf)
+        and vim.bo[buf].filetype == "snacks_win"
+      then
+        local cfg = api.nvim_win_get_config(win)
+        if cfg.relative and cfg.relative ~= "" then
+          cfg.relative = "cursor"
+          cfg.row = 0
+          cfg.col = 0
+          api.nvim_win_set_config(win, cfg)
+          break
+        end
+      end
+    end
+  end,
+})
